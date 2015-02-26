@@ -3,9 +3,11 @@
 require 'stomp'
 require 'redis'
 require 'json'
-require "nebulous/version"
 
-require_relative 'redis' #bamf, wrong
+require "nebulous/version"
+require 'nebulous/nebrequest'
+require 'nebulous/nebresponse'
+require 'nebulous/redishandler'
 
 
 module Nebulous

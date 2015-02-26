@@ -26,9 +26,12 @@ Gem::Specification.new do |spec|
   spec.post_install_message = "Nebulous has been installed ...probably."
 
   spec.add_development_dependency "bundler", "~> 1.6"
-  spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "rake",    "~> 10.0"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "yard"
   spec.add_development_dependency "redcarpet"
   spec.add_development_dependency "rdoc"
+
+  spec.add_runtime_dependancy "stomp", '>=1.3.3'
+  spec.add_runtime_dependancy "redis", '>=3.1.0'
 end
