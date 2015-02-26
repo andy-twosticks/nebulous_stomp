@@ -1,0 +1,19 @@
+syntax: regexp
+
+^\.bundle/
+^\.yardoc
+^Gemfile.lock
+^_yardoc/
+^coverage/
+^doc/
+^pkg/
+^spec/reports/
+^tmp/
+
+syntax: glob
+*.bundle
+*.so
+*.o
+*.a
+mkmf.log
+
