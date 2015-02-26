@@ -1,5 +1,20 @@
+# coding: UTF-8
+
+require 'stomp'
+require 'redis'
+require 'json'
 require "nebulous/version"
 
+require_relative 'redis' #bamf, wrong
+
+
 module Nebulous
-  # Your code goes here...
+
+
+  class NebulousError   < StandardError; end
+  class NebulousTimeout < StandardError; end
+
+  
+
 end
+

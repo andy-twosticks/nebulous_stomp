@@ -16,4 +16,4 @@ syntax: glob
 *.o
 *.a
 mkmf.log
-
+.ruby-*
