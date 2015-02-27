@@ -15,7 +15,7 @@ module Nebulous
                       redisConnectHash: {},
                       messageTimeout:   10,
                       cacheTimeout:     120,
-                      targets:          [] }
+                      targets:          {} }
 
     # Default hash for each target
     TargetDefaults = { sendQueue:      nil,
@@ -42,7 +42,7 @@ module Nebulous
     def add_target(n, t)
       raise NebulousError, "Invalid target hash" unless t.kind_of?(Hash)
 
-      validate(TargetDefaults, p, "Unknown target hash")
+      validate(TargetDefaults, t, "Unknown target hash")
 
       raise NebulousError, "Config Problem - Target missing 'send'" \
         if t[:sendQueue].nil?
@@ -51,6 +51,15 @@ module Nebulous
         if t[:receiveQueue].nil?
 
       @params[:targets][n.to_sym] = TargetDefaults.merge(t)
+    end
+
+
+    # Get the whole parameter hash
+    # Probably only useful for testing
+    # @return [Hash]
+    #
+    def get_all()
+      @params
     end
 
 

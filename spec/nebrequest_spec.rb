@@ -5,6 +5,10 @@ include Nebulous
 
 describe NebRequest do
 
+  before do
+    Nebulous.init()
+  end
+
 
   describe "#initialize" do
 
