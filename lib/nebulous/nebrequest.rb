@@ -14,7 +14,13 @@ module Nebulous
 
 
     # Create a new request 
-    # Throws NebulousError.
+    # @raise NebulousError if anything goes wrong
+    #
+    # @param target [Symbol] the target name to send the request to
+    # @param verb [String]   the 'verb' part of the message
+    # @param params [String] the 'parameters' part of the message
+    # @param desc [String]   the 'description' part of the message
+    # @param client          ONLY FOR TESTING
     #
     def initialize(target, verb, params=nil, desc=nil, client=nil)
 
@@ -47,6 +53,11 @@ module Nebulous
 
     # Return a message body formatted for The Protocol
     #
+    # @param verb   [String] the code for the action taken by the receiver
+    # @param params [String] parameters for the action routine
+    # @param desc   [String] text for logs, users, etc
+    # @return       [String] Message formatted as JSON
+    #
     def self.to_protocol(verb, params = nil, desc = nil)
       h = {verb: verb}
       h[:parameters]  = params unless params.nil?
@@ -56,8 +67,11 @@ module Nebulous
     end
 
 
-    # given a target name, return the Nebulous queues for that target from
-    # config.yaml or, raise an exception
+    # Return the Nebulous queues for a target
+    # @raise NebulousError if they are missing
+    #
+    # @param target [Symbol]        the nebulous target name
+    # @return       [Array<String>] the request and response queue strings
     #
     def self.parse_config_for(target)
       targetHash = Param.get_target(target)
@@ -69,7 +83,10 @@ module Nebulous
     end
 
 
-    # Connect to the STOMP message server or throw an exception
+    # Connect to the STOMP message server
+    # @raise NebulousError if the connection fails
+    #
+    # @return [Stomp::Client] a handle to the STOMP client
     #
     def self.stomp_connect
       client = Stomp::Client.new( Param.get(:stompConnectHash) )
@@ -86,10 +103,9 @@ module Nebulous
 
     # Run a routine with a timeout.
     #
-    # Parameters:
-    #  secs - seconds to wait
+    # @param secs [Integer] seconds to wait
     #
-    # Example:
+    # @example
     #  with timeout(10) do |r|
     #    sleep 20
     #    r.signal
@@ -124,15 +140,15 @@ module Nebulous
     #
 
     # Send a request and return the response, without the cache
-    # Throws NebulousTimeout, NebulousError.
+    # @raise NebulousTimeout, NebulousError
+    #
     # Note that this routine completely ignores Redis. It doesn't just not
     # check the cache; it also doesn't update it.
     #
     def send_no_cache
       raise NebulousTimeout unless nebulous_on?
 
-      puts "Nebulous request- v:#{@verb} p:#{@params}" \
-          unless MODE == 'production'
+      #puts "Nebulous request- v:#{@verb} p:#{@params}" unless MODE == 'production'
 
       begin
         # If we've lost the connection then reconnect but *keep replyID*
@@ -151,17 +167,16 @@ module Nebulous
 
     # As send_nocache, but without not checking the cache :)
     #
-    # Throws NebulousTimeout, NebulousError.
+    # @raise NebulousTimeout, NebulousError
     #
-    # We use Redis for the cache. This is possibly like using a sledgehammer 
+    # We use Redis for the cache. This is possibly like using a sledgehammer
     # to crack a nut, but it certainly makes things very simple.
     #
     def send
       raise NebulousTimeout unless nebulous_on?
       return send_no_cache unless redis_on?
 
-      puts "Redis query- v:#{@verb} p:#{@params}" \
-          unless MODE == 'production'
+      #puts "Redis query- v:#{@verb} p:#{@params}" unless MODE == 'production'
 
       redis = nil
 
@@ -183,7 +198,7 @@ module Nebulous
     end
 
 
-    # connect to STOMP and do initial setup
+    # Connect to STOMP and do initial setup
     #
     def neb_connect
       @client ||= NebRequest.stomp_connect
@@ -192,6 +207,8 @@ module Nebulous
 
 
     # Return true if Redis is turned on in the config
+    #
+    # @return [Logic]
     #
     def redis_on?
       ! Param.get(:redisConnectHash).nil?

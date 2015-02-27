@@ -20,6 +20,8 @@ module Nebulous
     # object can be initialised by passing it either a STOMP message or a
     # JSON string ( which comes, indirectly, from to_cache() )
     #
+    # @param thingy [Stomp::Message, String] 
+    #
     def initialize(thingy)
       case thingy
         when Stomp::Message then initialize_from_stomp(thingy)
@@ -77,6 +79,10 @@ module Nebulous
 
 
     # If the body is in JSON, return a hash.
+    # @raise throw JSON::ParseError if the body isn't JSON
+    #
+    # @return [String] JSON text
+    #
     def body_to_h
       begin
         return JSON::parse(@body)

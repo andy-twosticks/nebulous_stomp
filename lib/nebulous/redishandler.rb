@@ -8,10 +8,13 @@ require 'redis'
 module Nebulous
 
 
+  # Deal with Redis
+  # 
   class RedisHandler
 
 
-    # Connect to the Redis key/value store or throw an exception
+    # Connect to the Redis key/value store
+    # @raise NebulousError if connection fails
     #
     def self.connect
       redis = Redis.new( Param.get(:redisConnectHash) )
