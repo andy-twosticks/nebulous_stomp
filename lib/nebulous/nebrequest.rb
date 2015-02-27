@@ -1,5 +1,8 @@
 # coding: UTF-8
 
+require 'stomp'
+
+
 module Nebulous
 
 
@@ -22,12 +25,8 @@ module Nebulous
       @verb, @params, @desc = verb, params, desc 
 
       # Nebulous response timeout; time for a cache entry to expire
-      @mTimeout = 0
-      @cTimeout = 0
-      unless PARAMS[:nebulous].nil?
-        @mTimeout = PARAMS[:nebulous][:messageTimeout] || 10
-        @cTimeout = PARAMS[:nebulous][:cacheTimeout] || 120
-      end
+      @mTimeout = Param.get(:messageTimeout)
+      @cTimeout = Param.get(:cacheTimeout)
 
       # The request message body
       @message = NebRequest.to_protocol(verb, params, desc)
@@ -41,7 +40,7 @@ module Nebulous
       # The "unique ID" attached to the message
       @replyID = nil
 
-      # Now we connect and set @replyID (if Nebulous is turned on)
+      # Now we connect and set @replyID 
       neb_connect
     end
 
@@ -61,20 +60,10 @@ module Nebulous
     # config.yaml or, raise an exception
     #
     def self.parse_config_for(target)
-      return nil, nil if PARAMS[:nebulous].nil?
-      target = target.to_sym
+      targetHash = Param.get_target(target)
 
-      raise NebulousError, "Config Problem - Unknown Target '#{target}'" \
-        unless ::SwingShift::PARAMS[:nebulous][:targets].include?(target)
-
-      requestQ  = PARAMS[:nebulous][:targets][target][:send]
-      responseQ = PARAMS[:nebulous][:targets][target][:receive]
-
-      raise NebulousError, "Config Problem - Target missing 'send'" \
-        if requestQ.nil?
-
-      raise NebulousError, "Config Problem - Target missing 'receive'" \
-        if responseQ.nil?
+      requestQ  = targethash[:sendQueue]
+      responseQ = targethash[:receiveQueue]
 
       return requestQ, responseQ
     end
@@ -83,7 +72,7 @@ module Nebulous
     # Connect to the STOMP message server or throw an exception
     #
     def self.stomp_connect
-      client = Stomp::Client.new( PARAMS[:nebulous][:connect] )
+      client = Stomp::Client.new( Param.get(:stompConnectHash) )
       raise NebulousError, "Stomp Connection failed" unless client.open?
 
       conn = client.connection_frame()
@@ -197,24 +186,15 @@ module Nebulous
     # connect to STOMP and do initial setup
     #
     def neb_connect
-      return unless nebulous_on?
-
       @client ||= NebRequest.stomp_connect
       @replyID = calc_replyID
-    end
-
-
-    # return true if Nebulous is turned on in the config
-    #
-    def nebulous_on?
-      PARAMS.include?(:nebulous) && @mTimeout > 0
     end
 
 
     # Return true if Redis is turned on in the config
     #
     def redis_on?
-      PARAMS.include?(:redis) && @cTimeout > 0
+      ! Param.get(:redisConnectHash).nil?
     end
 
 

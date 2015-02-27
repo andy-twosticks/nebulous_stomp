@@ -1,5 +1,9 @@
 # coding: UTF-8
 
+require 'stomp'
+require 'json'
+
+
 module Nebulous
 
 
