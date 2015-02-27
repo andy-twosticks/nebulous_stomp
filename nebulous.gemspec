@@ -32,6 +32,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "redcarpet"
   spec.add_development_dependency "rdoc"
 
-  spec.add_runtime_dependancy "stomp", '>=1.3.3'
-  spec.add_runtime_dependancy "redis", '>=3.1.0'
+  spec.add_runtime_dependency "stomp", '>=1.3.3'
+  spec.add_runtime_dependency "redis", '>=3.1.0'
 end

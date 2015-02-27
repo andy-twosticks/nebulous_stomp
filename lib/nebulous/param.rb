@@ -10,7 +10,7 @@ module Nebulous
     extend self
 
 
-    def set_params(p)
+    def set(p)
       raise NebulousError, "Invalid initialisation hash" unless p.kind_of?(Hash)
 
       defaults = { stompConnectHash: {},
@@ -34,17 +34,26 @@ module Nebulous
 
       validate(defaults, p, "Unknown target hash")
 
+      raise NebulousError, "Config Problem - Target missing 'send'" \
+        if t[:sendQueue].nil?
+
+      raise NebulousError, "Config Problem - Target missing 'receive'" \
+        if t[:receiveQueue].nil?
+
       @params[:targets][n.to_sym] = defaults.merge(t)
     end
 
 
-    def get_param(p)
+    def get(p)
       @params[p]
     end
 
 
     def get_target(name)
-      @params[:targets][name.to_sym]
+      name = name.to_sym
+      x = @params[:targets][name]
+      raise NebulousError, "Config problem - unknown target #{name}" if x.nil?
+      return x
     end
 
 
