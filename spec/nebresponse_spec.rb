@@ -1,5 +1,7 @@
 require 'spec_helper'
 
+include Nebulous
+
 
 describe NebResponse do
 

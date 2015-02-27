@@ -1,5 +1,7 @@
 require 'spec_helper'
 
+include Nebulous
+
 
 describe NebRequest do
 
@@ -17,24 +19,11 @@ describe NebRequest do
 
   describe "#send_no_cache" do
 
-    context "if Nebulous is turned off" do
-
-      before { @saved = PARAMS.delete(:nebulous) }
-      after  { PARAMS[:nebulous] = @saved }
-        
-      it "raises a NebulousTimeout" do
-        expect{ NebRequest.new('accord', 'foo').send_no_cache }.to \
-            raise_exception(NebulousTimeout)
-
-      end
-      
-    end
-
     context "if nebulous is turned on and it gets no response" do
 
       before do
         # here we send an actual STOMP request to a non-existant target
-        PARAMS[:nebulous][:targets][:dummy] = {:send => "foo", :receive => "foo"}
+        Param.add_target(:dummy, :send => "foo", :receive => "foo")
       end
 
       it "returns a NebulousTimeout" do
@@ -47,7 +36,7 @@ describe NebRequest do
     context "if nebulous is turned on and it gets a response" do
 
       before do
-        PARAMS[:nebulous][:messageTimeout] = 1
+        Param.set( {:messageTimeout => 1} )
 
         # mock the whole STOMP process ... eek...
         @client = instance_double( Stomp::Client, 
