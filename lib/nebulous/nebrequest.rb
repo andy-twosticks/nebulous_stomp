@@ -9,18 +9,51 @@ module Nebulous
   # Class to handle requests and return a NebResponse
   #
   class NebRequest
-    attr_reader :target, :verb, :params, :desc, :client, :replyID
-    attr_reader :mTimeout, :cTimeout, :message, :requestQ, :responseQ
+
+    
+    # The target name as set up by call to Nebulous::add_target
+    attr_reader :target
+    
+    # The 'verb' part of the message
+    attr_reader :verb      
+    
+    # The 'parameters' part of the message
+    attr_reader :params    
+
+    # The 'description' part of the message
+    attr_reader :desc
+    
+    # The STOMP client instance (dependancy injection for testing)
+    attr_reader :client
+
+    # The 'replyID' header to use in this message 
+    attr_reader :replyID
+
+    # Message timeout in seconds
+    attr_reader :mTimeout
+
+    # Cache timeout (fade and forget) in seconds
+    attr_reader :cTimeout
+
+    # The message
+    attr_reader :message
+
+    # The STOMP queue to send the request to
+    attr_reader :requestQ
+
+    # The STOMP queue to listen for responses on
+    attr_reader :responseQ
 
 
-    # Create a new request 
-    # @raise NebulousError if anything goes wrong
+    # Create a new request. Raises Nebulous::NebulousError if anything goes
+    # wrong.
     #
-    # @param target [Symbol] the target name to send the request to
-    # @param verb [String]   the 'verb' part of the message
-    # @param params [String] the 'parameters' part of the message
-    # @param desc [String]   the 'description' part of the message
-    # @param client          ONLY FOR TESTING
+    # Parameters:
+    #  target [Symbol] the target name to send the request to
+    #  verb   [String] the 'verb' part of the message
+    #  params [String] the 'parameters' part of the message
+    #  desc   [String] the 'description' part of the message
+    #  client          ONLY FOR TESTING
     #
     def initialize(target, verb, params=nil, desc=nil, client=nil)
 
@@ -51,12 +84,16 @@ module Nebulous
     end
 
 
-    # Return a message body formatted for The Protocol
+    # :call-seq:
+    # NebRequest.to_protocol(verb, params = nil, desc = nil) -> (String)
     #
-    # @param verb   [String] the code for the action taken by the receiver
-    # @param params [String] parameters for the action routine
-    # @param desc   [String] text for logs, users, etc
-    # @return       [String] Message formatted as JSON
+    # Return a message body formatted for The Protocol.
+    #
+    # Parameters:
+    #  verb      [String] the code for the action taken by the receiver
+    #  params    [String] parameters for the action routine
+    #  desc      [String] text for logs, users, etc
+    #  (Returns) [String] Message formatted as JSON
     #
     def self.to_protocol(verb, params = nil, desc = nil)
       h = {verb: verb}
@@ -67,11 +104,11 @@ module Nebulous
     end
 
 
-    # Return the Nebulous queues for a target
-    # @raise NebulousError if they are missing
+    # :call-seq:
+    # NebRequest.parse_config_for(target) -> (requestQueue, ResponseQueue)
     #
-    # @param target [Symbol]        the nebulous target name
-    # @return       [Array<String>] the request and response queue strings
+    # Return the Nebulous queues for a target. Raise Nebulous::NebulousError if
+    # they are missing.
     #
     def self.parse_config_for(target)
       targetHash = Param.get_target(target)
@@ -83,10 +120,11 @@ module Nebulous
     end
 
 
-    # Connect to the STOMP message server
-    # @raise NebulousError if the connection fails
+    # :call-seq:
+    # NebRequest.stomp_connect() -> (STOMP.client)
     #
-    # @return [Stomp::Client] a handle to the STOMP client
+    # Connect to the STOMP message server. Raise Nebulous::NebulousError if the
+    # connection fails.
     #
     def self.stomp_connect
       client = Stomp::Client.new( Param.get(:stompConnectHash) )
@@ -101,12 +139,13 @@ module Nebulous
     end
 
 
+    # :call-seq:
+    # NebRequest.with_timeout(secs) -> (nil)
+    #
     # Run a routine with a timeout.
     #
-    # @param secs [Integer] seconds to wait
-    #
-    # @example
-    #  with timeout(10) do |r|
+    # Example:
+    #  with_timeout(10) do |r|
     #    sleep 20
     #    r.signal
     #  end
@@ -139,8 +178,9 @@ module Nebulous
     # INSTANCE METHODS
     #
 
-    # Send a request and return the response, without the cache
-    # @raise NebulousTimeout, NebulousError
+    # Send a request and return the response, without the cache.
+    #
+    # Raise NebulousTimeout or NebulousError as necessary.
     #
     # Note that this routine completely ignores Redis. It doesn't just not
     # check the cache; it also doesn't update it.
@@ -167,7 +207,7 @@ module Nebulous
 
     # As send_nocache, but without not checking the cache :)
     #
-    # @raise NebulousTimeout, NebulousError
+    # Raises NebulousTimeout, NebulousError as necessary.
     #
     # We use Redis for the cache. This is possibly like using a sledgehammer
     # to crack a nut, but it certainly makes things very simple.
@@ -207,8 +247,6 @@ module Nebulous
 
 
     # Return true if Redis is turned on in the config
-    #
-    # @return [Logic]
     #
     def redis_on?
       ! Param.get(:redisConnectHash).nil?

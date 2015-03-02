@@ -23,14 +23,14 @@ Gem::Specification.new do |spec|
   spec.requirements << 'STOMP Messaging server'
   spec.requirements << 'Redis server (optional)'
 
-  spec.post_install_message = "Nebulous has been installed ...probably."
+  spec.post_install_message = %w{Nebulous has been installed ...sort of...
+                                 ::waves arms noncomittedly::} * ' '
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake",    "~> 10.0"
   spec.add_development_dependency "rspec"
-  spec.add_development_dependency "yard"
-  spec.add_development_dependency "redcarpet"
   spec.add_development_dependency "rdoc"
+  spec.add_development_dependency "pry"
   spec.add_development_dependency "guard"
   spec.add_development_dependency "guard-rspec"
 

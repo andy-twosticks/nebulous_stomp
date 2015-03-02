@@ -23,9 +23,13 @@ module Nebulous
                        messageTimeout: nil }
 
 
-    # Set the initial parameter string
-    # This also has the effect of resetting everything
-    # @param p [Hash] Optional hash to override defaults
+    # Set the initial parameter string. This also has the effect of resetting
+    # everything. 
+    #
+    # Parameters default to Param::ParamDefaults. keys passed in parameter p to
+    # ovveride those defaults must match, or a NebulousError will result.
+    #
+    # This method is only called by Nebulous::init().
     #
     def set(p={})
       raise NebulousError, "Invalid initialisation hash" unless p.kind_of?(Hash)
@@ -36,7 +40,12 @@ module Nebulous
     end
 
 
-    # Add a Nebulous target
+    # Add a Nebulous target.  Raises NebulousError if anything looks screwy.
+    #
+    # Parameters:
+    #  n -- target name
+    #  t -- hash, which must follow the pattern set by Param::TargetDefaults
+    #
     # Used only by Nebulous::init
     #
     def add_target(n, t)
@@ -54,26 +63,21 @@ module Nebulous
     end
 
 
-    # Get the whole parameter hash
-    # Probably only useful for testing
-    # @return [Hash]
+    # Get the whole parameter hash. Probably only useful for testing.
     #
     def get_all()
       @params
     end
 
 
-    # Get a parameter
-    # @param p [Symbol] The parameter to retreive
+    # Get a the value of the parameter with the key p.
     #
     def get(p)
       @params[p.to_sym]
     end
 
 
-    # Return a target hash 
-    # @param name [Symbol] the name of the target
-    # @return [Hash] the hash of parameters for that target
+    # Given a target name, return the corresponding target hash 
     #
     def get_target(name)
       name = name.to_sym
@@ -84,7 +88,8 @@ module Nebulous
 
 
     # Raise an exception if a hash has any keys not found in an exemplar
-    # @private
+    #
+    # (Private method, only called within Param)
     #
     def validate(exemplar, hash, message)
       hash.each_key do |k|

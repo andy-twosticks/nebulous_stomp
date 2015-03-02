@@ -17,10 +17,11 @@ module Nebulous
     attr_reader :verb, :parameters, :description # The Protocol
 
 
-    # object can be initialised by passing it either a STOMP message or a
-    # JSON string ( which comes, indirectly, from to_cache() )
+    # NebResponse can be initialised by passing it either:
+    # * a STOMP message -- returned from a Nebulous request
+    # * a JSON string -- from Redis, originally created by to_cache()
     #
-    # @param thingy [Stomp::Message, String] 
+    # If you pass it anything else, it will raise a NebulousError.
     #
     def initialize(thingy)
       case thingy
@@ -78,10 +79,8 @@ module Nebulous
     end
 
 
-    # If the body is in JSON, return a hash.
-    # @raise throw JSON::ParseError if the body isn't JSON
-    #
-    # @return [String] JSON text
+    # If the body is in JSON, return a hash. Raises a JSON::ParseError if it
+    # isn't.
     #
     def body_to_h
       begin

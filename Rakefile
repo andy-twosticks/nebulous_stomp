@@ -1,13 +1,14 @@
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require 'yard'
+require 'rdoc'
 
 RSpec::Core::RakeTask.new(:spec)
 
-YARD::Rake::YardocTask.new do |t|
-  t.files = ['lib/**/*.rb', '-', 'md/*.*']
-  t.options = [ '-r', 'md/README.md' ]
-  #t.stats_options = [ '--list-undoc']
+RDoc::Task.new do |rdoc|
+  rdoc.main = "md/README.md"
+  rdoc.rdoc_files.include("lib/*", "md/*")
+  rdoc.options << "-r"
+  rdoc.rdoc_dir = "doc"
 end
 
 task :default => :spec
