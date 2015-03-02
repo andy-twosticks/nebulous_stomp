@@ -58,7 +58,7 @@ describe Param do
   end # of Param:add_target
 
 
-  describe "Param:get" do
+  describe "Param::get" do
     before do
       @hash = { stompConnectHash: {one: 1, two: 2},
                 redisConnectHash: {three: 4, five: 6},
@@ -76,6 +76,25 @@ describe Param do
 
 
   end # of param::get
+
+
+  describe "Param::get_target" do
+    before do
+      @targ = {receiveQueue: 'foo', sendQueue: 'bar'}
+      Param.add_target(:one, @targ)
+    end
+
+
+    it "throws an exception if you ask for a target it doesn't have" do
+      expect{ Param.get_target(:two) }.to raise_exception(NebulousError)
+    end
+
+    it "returns the target hash corresponding to the name" do
+      expect( Param.get_target(:one) ).to include(@targ)
+    end
+
+      
+  end # of get_target
 
 
 end

@@ -113,8 +113,8 @@ module Nebulous
     def self.parse_config_for(target)
       targetHash = Param.get_target(target)
 
-      requestQ  = targethash[:sendQueue]
-      responseQ = targethash[:receiveQueue]
+      requestQ  = targetHash[:sendQueue]
+      responseQ = targetHash[:receiveQueue]
 
       return requestQ, responseQ
     end
@@ -186,8 +186,6 @@ module Nebulous
     # check the cache; it also doesn't update it.
     #
     def send_no_cache
-      raise NebulousTimeout unless nebulous_on?
-
       #puts "Nebulous request- v:#{@verb} p:#{@params}" unless MODE == 'production'
 
       begin

@@ -6,7 +6,25 @@ include Nebulous
 describe NebRequest do
 
   before do
-    Nebulous.init()
+    stomph = { hosts: [{ login:    'guest',
+                         passcode: 'guest',
+                         host:     '10.0.0.150',
+                         port:     61613,
+                         ssl:      false }],
+               reliable: false }
+
+    redish = { host: '127.0.0.1',
+               port: 6379,
+               db:   0 }
+
+    Nebulous.init( :stompConnectHash => stomph, 
+                   :redisConnectHash => redish,
+                   :messageTimeout   => 1 )
+
+    Nebulous.add_target( :accord, 
+                         :sendQueue => "/queue/laplace.in",
+                         :receiveQueue => "/queue/laplace.out" )
+
   end
 
 
@@ -23,11 +41,11 @@ describe NebRequest do
 
   describe "#send_no_cache" do
 
-    context "if nebulous is turned on and it gets no response" do
+    context "if Nebulous gets no response" do
 
       before do
         # here we send an actual STOMP request to a non-existant target
-        Param.add_target(:dummy, :send => "foo", :receive => "foo")
+        Param.add_target(:dummy, :sendQueue => "foo", :receiveQueue => "foo")
       end
 
       it "returns a NebulousTimeout" do
@@ -37,7 +55,7 @@ describe NebRequest do
       end
     end
 
-    context "if nebulous is turned on and it gets a response" do
+    context "if Nebulous gets a response" do
 
       before do
         Param.set( {:messageTimeout => 1} )
@@ -83,10 +101,6 @@ describe NebRequest do
 
 =begin
   describe "#send" do
-
-    context "if Nebulous is turned off" do
-      it "raises a NebulousTimeout"
-    end
 
     context "if nebulous is turned on and it gets no response" do
       it "returns a NebulousTimeout"
