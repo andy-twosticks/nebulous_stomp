@@ -12,9 +12,16 @@ module Nebulous
   #
   class NebResponse
 
-    attr_reader :headers   # STOMP message headers
-    attr_reader :body      # convenient access to message body
-    attr_reader :verb, :parameters, :description # The Protocol
+    
+    # STOMP message headers
+    attr_reader :headers   
+    
+    # convenient access to message body
+    attr_reader :body      
+
+    # @verb, @parameters & @description are the three parts of the message as
+    # defined by The Protocol
+    attr_reader :verb, :parameters, :description 
 
 
     # NebResponse can be initialised by passing it either:

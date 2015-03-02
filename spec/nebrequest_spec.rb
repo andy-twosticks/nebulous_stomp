@@ -6,25 +6,26 @@ include Nebulous
 describe NebRequest do
 
   before do
-    stomph = { hosts: [{ login:    'guest',
+    @stomph = { hosts: [{ login:    'guest',
                          passcode: 'guest',
                          host:     '10.0.0.150',
                          port:     61613,
                          ssl:      false }],
                reliable: false }
 
-    redish = { host: '127.0.0.1',
+    @redish = { host: '127.0.0.1',
                port: 6379,
                db:   0 }
 
-    Nebulous.init( :stompConnectHash => stomph, 
-                   :redisConnectHash => redish,
-                   :messageTimeout   => 1,
+    Nebulous.init( :stompConnectHash => @stomph, 
+                   :redisConnectHash => @redish,
+                   :messageTimeout   => 5,
                    :cacheTimeout     => 20 )
 
     Nebulous.add_target( :accord, 
-                         :sendQueue => "/queue/laplace.in",
-                         :receiveQueue => "/queue/laplace.out" )
+                         :sendQueue      => "/queue/laplace.in",
+                         :receiveQueue   => "/queue/laplace.out",
+                         :messageTimeout => 1 )
 
     # Wipe the whole darned Redis cache before every test.
     r = RedisHandler.connect
@@ -40,6 +41,24 @@ describe NebRequest do
           raise_exception(NebulousError)
 
     end
+
+    it "takes the timeout on the target over the default" do
+      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(1)
+    end
+
+    it "falls back to the default if the timeout on the target is not set" do
+      Nebulous.init( :stompConnectHash => @stomph, 
+                     :redisConnectHash => @redish,
+                     :messageTimeout   => 5,
+                     :cacheTimeout     => 20 )
+
+      Nebulous.add_target( :accord, 
+                           :sendQueue      => "/queue/laplace.in",
+                           :receiveQueue   => "/queue/laplace.out" )
+
+      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(5)
+    end
+      
 
   end
 

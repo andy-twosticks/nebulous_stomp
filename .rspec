@@ -1,5 +1,5 @@
---color
 --require spec_helper
+--color
+--fail-fast
 
-#--fail-fast
 #--format documentation

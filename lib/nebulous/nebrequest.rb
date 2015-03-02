@@ -60,18 +60,24 @@ module Nebulous
       # The target name -- should point to data in SwingShift::PARAMS
       @target = target                           
 
+      targetHash = Param.get_target(@target)
+      raise NebulousError, "Unknown target #{target}" if targetHash.nil?
+
       # The triumverate for The Protocol
       @verb, @params, @desc = verb, params, desc 
 
-      # Nebulous response timeout; time for a cache entry to expire
-      @mTimeout = Param.get(:messageTimeout)
+      # Time for a Redis cache entry to expire
       @cTimeout = Param.get(:cacheTimeout)
 
       # The request message body
       @message = NebRequest.to_protocol(verb, params, desc)
 
-      # The queues to send and listen on
-      @requestQ, @responseQ = NebRequest.parse_config_for(target)
+      # Send / receive STOMP queues for The Protocol
+      @requestQ  = targetHash[:sendQueue]
+      @responseQ = targetHash[:receiveQueue]
+
+      # Time before we give up waiting for a response
+      @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
 
       # STOMP::Client instance - *only* passed in during testing
       @client = client
@@ -101,22 +107,6 @@ module Nebulous
       h[:description] = desc   unless desc.nil?
 
       return h.to_json
-    end
-
-
-    # :call-seq:
-    # NebRequest.parse_config_for(target) -> (requestQueue, ResponseQueue)
-    #
-    # Return the Nebulous queues for a target. Raise Nebulous::NebulousError if
-    # they are missing.
-    #
-    def self.parse_config_for(target)
-      targetHash = Param.get_target(target)
-
-      requestQ  = targetHash[:sendQueue]
-      responseQ = targetHash[:receiveQueue]
-
-      return requestQ, responseQ
     end
 
 
@@ -186,7 +176,6 @@ module Nebulous
     # check the cache; it also doesn't update it.
     #
     def send_no_cache
-      #puts "Nebulous request- v:#{@verb} p:#{@params}" unless MODE == 'production'
 
       begin
         # If we've lost the connection then reconnect but *keep replyID*
@@ -212,8 +201,6 @@ module Nebulous
     #
     def send
       return send_no_cache unless redis_on?
-
-      #puts "Redis query- v:#{@verb} p:#{@params}" unless MODE == 'production'
 
       redis = nil
 

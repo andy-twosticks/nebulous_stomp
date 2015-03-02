@@ -17,11 +17,12 @@ require 'nebulous/redishandler'
 # Put simply: you can send a message to any other system that supports the
 # protocol, with an optional timeout, and get a response.
 #
-# It also exposes a simple interface for you to use Redis without talking to it
-# directly, should you want that.
-#
 # Use Nebulous::init and Nebulous::add_target to set it up; then create a
 # Nebulous::Nebrequest, which will return a Nebulous::Nebresponse.
+#
+# Since you are setting the Redis connection details as part of initialisation,
+# you can also use it to connect to Redis, if you want. See
+# Nebulous::RedisHandler.
 #
 module Nebulous
 
