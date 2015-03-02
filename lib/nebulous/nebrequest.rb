@@ -211,7 +211,6 @@ module Nebulous
     # to crack a nut, but it certainly makes things very simple.
     #
     def send
-      raise NebulousTimeout unless nebulous_on?
       return send_no_cache unless redis_on?
 
       #puts "Redis query- v:#{@verb} p:#{@params}" unless MODE == 'production'
@@ -219,7 +218,7 @@ module Nebulous
       redis = nil
 
       begin
-        redis = SwingShift::Cache::connect 
+        redis = RedisHandler::connect 
 
         found = redis.get(@message)
         return NebResponse.new(found) unless found.nil?
