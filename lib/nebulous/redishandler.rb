@@ -14,7 +14,7 @@ module Nebulous
 
 
     # Connect to the Redis key/value store. Raise NebulousError if connection
-    # fails
+    # fails. Return the handle to the Redis connection object.
     #
     def self.connect
       redis = Redis.new( Param.get(:redisConnectHash) )
@@ -24,6 +24,7 @@ module Nebulous
 
       return redis
     end
+
 
 
   end 
