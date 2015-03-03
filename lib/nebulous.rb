@@ -42,9 +42,9 @@ module Nebulous
   #
   # The default options are defined in Nebulous::Param.
   #
-  def init(paramHash={}) 
+  def self.init(paramHash={}) 
     Param.set(paramHash)
-    return ""
+    return nil
   end
 
 
@@ -57,8 +57,9 @@ module Nebulous
   # NebulousError will be thrown. Have a look in Nebulous::Param for the
   # default hash you are overriding here.
   #
-  def add_target(name, targetHash) # -> nil
+  def self.add_target(name, targetHash) # -> nil
     Param.add_target(name, targetHash)
+    return nil
   end
 
 
