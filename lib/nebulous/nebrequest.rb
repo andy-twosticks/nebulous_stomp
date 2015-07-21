@@ -91,7 +91,7 @@ module Nebulous
 
 
     # :call-seq:
-    # NebRequest.to_protocol(verb, params = nil, desc = nil) -> (String)
+    #   NebRequest.to_protocol(verb, params = nil, desc = nil) -> (String)
     #
     # Return a message body formatted for The Protocol.
     #
@@ -111,7 +111,7 @@ module Nebulous
 
 
     # :call-seq:
-    # NebRequest.stomp_connect() -> (STOMP.client)
+    #   NebRequest.stomp_connect() -> (STOMP.client)
     #
     # Connect to the STOMP message server. Raise Nebulous::NebulousError if the
     # connection fails.
@@ -130,7 +130,7 @@ module Nebulous
 
 
     # :call-seq:
-    # NebRequest.with_timeout(secs) -> (nil)
+    #   NebRequest.with_timeout(secs) -> (nil)
     #
     # Run a routine with a timeout.
     #

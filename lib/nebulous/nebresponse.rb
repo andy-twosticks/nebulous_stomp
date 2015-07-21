@@ -50,7 +50,7 @@ module Nebulous
       @verb, @parameters, @description = nil, nil, nil
 
       if stompMessage.headers["content-type"] =~ /json/i
-        h = body_to_h()
+        h = body_to_h() || {}
 
       else
         # We assume that text looks like STOMP headers, or nothing
@@ -63,6 +63,7 @@ module Nebulous
 
       end
 
+      # These might not be present, of course, in which case they -> nil
       @verb        = h["verb"]
       @parameters  = h["parameters"] || h["params"]
       @description = h["description"] || h["desc"]
@@ -86,13 +87,13 @@ module Nebulous
     end
 
 
-    # If the body is in JSON, return a hash. Raises a JSON::ParseError if it
-    # isn't.
+    # If the body is in JSON, return a hash. 
+    # If body is nil, or is not JSON, then return nil; don't raise an exception
     #
     def body_to_h
       begin
         return JSON::parse(@body)
-      rescue JSON::ParserError
+      rescue JSON::ParserError, TypeError
         return nil
       end
     end
