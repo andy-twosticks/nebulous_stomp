@@ -101,6 +101,19 @@ describe NebResponse do
       end
     end
 
+    context "If the body is nil(!)" do
+      it "returns nil" do
+        x = {}
+        x["body"] = nil
+        x["content-type"] = "JSON"
+
+        nr = NebResponse.new(x.to_json)
+
+        expect{ nr.body_to_h }.to_not raise_exception
+        expect( nr.body_to_h ).to be_nil
+      end
+    end
+
 
   end # of #body_to_h
 
