@@ -1,5 +1,5 @@
 module Nebulous
 
   # Nebulous version number
-  VERSION = "0.0.3"
+  VERSION = "0.1.0"
 end
