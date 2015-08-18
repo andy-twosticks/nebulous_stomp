@@ -7,6 +7,7 @@ require 'json'
 module Nebulous
 
 
+  ##
   # Class to carry the response message back to the caller 
   # (and make sense of it)
   #
@@ -24,6 +25,7 @@ module Nebulous
     attr_reader :verb, :parameters, :description 
 
 
+    ##
     # NebResponse can be initialised by passing it either:
     # * a STOMP message -- returned from a Nebulous request
     # * a JSON string -- from Redis, originally created by to_cache()
@@ -41,6 +43,34 @@ module Nebulous
     end
 
 
+    ##
+    # If the body is in JSON, return a hash. 
+    # If body is nil, or is not JSON, then return nil; don't raise an exception
+    #
+    def body_to_h
+      JSON::parse(@body)
+
+    rescue JSON::ParserError, TypeError
+      return nil
+    end
+
+
+    ##
+    # Return something that can be serialised in Redis
+    #
+    def to_cache
+      { headers:     @headers,
+        body:        @body,
+        verb:        @verb,
+        parameters:  @parameters,
+        description: @description }.to_json
+    end
+
+
+    private
+
+
+    ##
     # Initialise the object from a STOMP message
     #
     def initialize_from_stomp(stompMessage)
@@ -54,7 +84,6 @@ module Nebulous
 
       else
         # We assume that text looks like STOMP headers, or nothing
-
         h = {}
         stompMessage.body.split("\n").each do |line|
           k,v = line.split(':', 2).each{|x| x.strip! }
@@ -67,46 +96,27 @@ module Nebulous
       @verb        = h["verb"]
       @parameters  = h["parameters"] || h["params"]
       @description = h["description"] || h["desc"]
+
+      # Moreover, assume that if verb is missing, the other two are just part
+      # of the response which is nothing to do with the protocol
+      @parameters = @description = nil unless @verb
     end
 
 
+    ##
     # Initialise the object from a JSON string 
     #
     def initialize_from_string(string)
-      begin
-        h = JSON::parse(string)
-      rescue JSON::ParserError => e
-        raise NebulousError, e.message
-      end
+      h = JSON::parse(string)
 
       @headers     = h["headers"]
       @body        = h["body"]
       @verb        = h["verb"]
       @parameters  = h["parameters"]
       @description = h["description"]
-    end
 
-
-    # If the body is in JSON, return a hash. 
-    # If body is nil, or is not JSON, then return nil; don't raise an exception
-    #
-    def body_to_h
-      begin
-        return JSON::parse(@body)
-      rescue JSON::ParserError, TypeError
-        return nil
-      end
-    end
-
-
-    # Return something that can be serialised in Redis
-    #
-    def to_cache
-      { headers:     @headers,
-        body:        @body,
-        verb:        @verb,
-        parameters:  @parameters,
-        description: @description }.to_json
+    rescue JSON::ParserError => e
+      raise NebulousError, e.message
     end
 
 

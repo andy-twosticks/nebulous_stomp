@@ -14,8 +14,8 @@ describe NebRequest do
                reliable: false }
 
     @redish = { host: '127.0.0.1',
-               port: 6379,
-               db:   0 }
+                port: 6379,
+                db:   0 }
 
     Nebulous.init( :stompConnectHash => @stomph, 
                    :redisConnectHash => @redish,

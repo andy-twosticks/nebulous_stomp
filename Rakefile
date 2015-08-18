@@ -11,5 +11,8 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_dir = "doc"
 end
 
-task :default => :spec
+desc "Start Guard"
+task :guard do
+  sh "bundle exec guard"
+end
 
