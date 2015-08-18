@@ -47,6 +47,11 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   NebRequest.new(target, verb) 
+    #   NebRequest.new(target, verb, params) 
+    #   NebRequest.new(target, verb, params, desc) 
+    #
     # Create a new request. Raises Nebulous::NebulousError if anything goes
     # wrong.
     #
@@ -154,13 +159,14 @@ module Nebulous
         resource.wait(mutex, secs)
       end
 
+      return nil
     end
 
 
     ##
-    # ::call-seq::
-    #   NebRequest.send_no_cache           -> (NebResponse)
-    #   NebRequest.send_no_cache(mTimeout) -> (NebResponse)
+    # :call-seq:
+    #   request.send_no_cache           -> (NebResponse)
+    #   request.send_no_cache(mTimeout) -> (NebResponse)
     #
     # Send a request and return the response, without using the cache.
     #
@@ -188,9 +194,9 @@ module Nebulous
 
     ##
     # ::call-seq::
-    #   NebRequest.send                    -> (NebResponse)
-    #   NebRequest.send(mTimeout)          -> (NebResponse)
-    #   NebRequest.send(mTimeout,cTimeout) -> (NebResponse)
+    #   request.send                    -> (NebResponse)
+    #   request.send(mTimeout)          -> (NebResponse)
+    #   request.send(mTimeout,cTimeout) -> (NebResponse)
     #
     # As send_nocache, but without not checking the cache :)
     #
@@ -204,7 +210,7 @@ module Nebulous
     # to crack a nut, but it certainly makes things very simple.
     #
     def send(mTimeout=@mTimeout, cTimeout=@cTimeout)
-      return send_no_cache unless redis_on?
+      return send_no_cache(mTimeout) unless redis_on?
 
       redis = nil
       redis = RedisHandler::connect 
@@ -224,7 +230,31 @@ module Nebulous
 
 
     ##
-    # Clear the cache of responses to this request
+    # :call-seq:
+    #   request.get_from_cache -> (String || nil)
+    #
+    # Try to get the response from the cache. Returns the cached response, or
+    # nil if not found
+    #
+    # *Send* doesn't use this because it wants the redis handle to set the cache
+    # afterwards. The primary use for this is testing, but, who knows what
+    # other use we might find.
+    #
+    def get_from_cache
+      redis = nil
+      redis = RedisHandler::connect 
+
+      return redis.get(@message)
+    ensure
+      redis.quit unless redis.nil?
+    end
+
+
+    ##
+    # :call-seq:
+    #   request.clear_cache -> self
+    #
+    # Clear the cache of responses to this request - just this request.
     #
     def clear_cache
       redis = nil
@@ -239,15 +269,24 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   request.neb_connect -> self
+    #
     # Connect to STOMP and do initial setup
+    # Called automatically by initialize, so probably useless to and end-user.
     #
     def neb_connect
       @client ||= NebRequest.stomp_connect
       @replyID = calc_replyID
+
+      return self
     end
 
 
     ##
+    # :call-seq:
+    #   request.redis_on? -> (boolean)
+    #
     # Return true if Redis is turned on in the config
     #
     def redis_on?

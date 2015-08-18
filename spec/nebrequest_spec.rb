@@ -17,6 +17,18 @@ describe NebRequest do
                 port: 6379,
                 db:   0 }
 
+    # The message that "stomp" returns to Nebulous. This has to be a real
+    # Stomp::Message because (we assume) NebResponse uses class to tell what is
+    # has been passed. Luckily it takes an actual frame; that seems unlikely to
+    # change soon and is fairly stable for testing.
+    # Note that we leave a %s here for the reply-to field...
+    @msg = [ 'MESSAGE',
+             'destination:/queue/foo',
+             'message-id:999',
+             'neb-in-reply-to:%s',
+             '',
+             'Foo' ].join("\n") + "\0"
+
     Nebulous.init( :stompConnectHash => @stomph, 
                    :redisConnectHash => @redish,
                    :messageTimeout   => 5,
@@ -111,23 +123,21 @@ describe NebRequest do
 
       it "returns a NebResponse object" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        # The message that "stomp" returns to Nebulous. This has to be a real
-        # Stomp::Message because (we assume) NebResponse uses class to tell
-        # what is has been passed. Luckily it takes an actual frame; that seems
-        # unlikely to change soon and is fairly stable for testing.
-        @msg = Stomp::Message.new( [ 'MESSAGE',
-                                     'destination:/queue/foo',
-                                     'message-id:999',
-                                     'neb-in-reply-to:' + request.replyID,
-                                     '',
-                                     'Foo' ].join("\n") + "\0" )
-                                    
-        expect(@client).to receive(:subscribe).and_yield(@msg)
+        msg = Stomp::Message.new( @msg % request.replyID )
+        expect(@client).to receive(:subscribe).and_yield(msg)
 
         response = request.send_no_cache
         expect( response ).to be_a NebResponse
         expect( response.body ).to eq('Foo')
+      end
+
+      # I have no idea how to actual check that it *honours* the timeout...
+      it "allows you to specify a message timeout" do
+        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+        msg = Stomp::Message.new( @msg % request.replyID )
+        allow(@client).to receive(:subscribe).and_yield(msg)
+
+        expect{ response = request.send_no_cache(3) }.not_to raise_exception
       end
 
     end #send_no_cache
@@ -136,15 +146,8 @@ describe NebRequest do
     describe "#send" do
       it "returns a NebResponse object from STOMP the first time" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        @msg = Stomp::Message.new( [ 'MESSAGE',
-                                     'destination:/queue/foo',
-                                     'message-id:999',
-                                     'neb-in-reply-to:' + request.replyID,
-                                     '',
-                                     'Foo' ].join("\n") + "\0" )
-                                    
-        expect(@client).to receive(:subscribe).and_yield(@msg)
+        msg = Stomp::Message.new( @msg % request.replyID )
+        expect(@client).to receive(:subscribe).and_yield(msg)
 
         response = request.send
         expect( response ).to be_a NebResponse
@@ -155,15 +158,9 @@ describe NebRequest do
 
         # First time
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
+        msg = Stomp::Message.new( @msg % request.replyID )
+        expect(@client).to receive(:subscribe).and_yield(msg)
 
-        @msg = Stomp::Message.new( [ 'MESSAGE',
-                                     'destination:/queue/foo',
-                                     'message-id:999',
-                                     'neb-in-reply-to:' + request.replyID,
-                                     '',
-                                     'Foo' ].join("\n") + "\0" )
-                                    
-        expect(@client).to receive(:subscribe).and_yield(@msg)
         response = request.send
 
 
@@ -179,12 +176,65 @@ describe NebRequest do
         expect( response.body ).to eq('Foo')
       end
 
+      it "allows you to specify a message timeout & cache timeout" do
+        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+        msg = Stomp::Message.new( @msg % request.replyID )
+        allow(@client).to receive(:subscribe).and_yield(msg)
+
+        expect{ response = request.send(3) }.not_to raise_exception
+        expect{ response = request.send(3, 120) }.not_to raise_exception
+      end
+
     end # #send
+
+
+    describe "#get_from_cache" do
+
+      it "returns nil if there is no cached value" do
+        req = NebRequest.new('accord', 'foo', nil, nil, @client)
+        
+        expect( req.get_from_cache ).to eq nil
+      end
+
+      it "returns the cached value if there is one" do
+        req = NebRequest.new('accord', 'foo', nil, nil, @client)
+        msg = Stomp::Message.new( @msg % req.replyID )
+        allow(@client).to receive(:subscribe).and_yield(msg)
+
+        req.send
+        expect( req.get_from_cache ).not_to eq nil
+      end
+
+
+    end
           
+
+    describe "#clear_cache" do
+      before do
+        msg  = [ 'foo', 'bar' ]
+        @req = []
+
+        2.times do
+          r = NebRequest.new('accord', msg.shift, nil, nil, @client)
+          m = Stomp::Message.new( @msg % r.replyID )
+          allow(@client).to receive(:subscribe).and_yield(m)
+          r.send
+          @req << r
+        end
+      end
+
+      it "removes the redis cache for a single request" do
+        expect( @req[0].get_from_cache ).not_to eq nil
+        expect( @req[1].get_from_cache ).not_to eq nil
+
+        @req[0].clear_cache
+        expect( @req[0].get_from_cache ).to eq nil
+        expect( @req[1].get_from_cache ).not_to eq nil
+      end
+
+    end
 
   end # context "gets a response"
 
-
-end
-
+end # of NebRequest
 

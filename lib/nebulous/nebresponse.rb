@@ -26,6 +26,10 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   NebResponse.new(string)
+    #   NebResponse.new(message)
+    #
     # NebResponse can be initialised by passing it either:
     # * a STOMP message -- returned from a Nebulous request
     # * a JSON string -- from Redis, originally created by to_cache()
@@ -44,6 +48,9 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   response.body_to_h -> (Hash || nil)
+    #
     # If the body is in JSON, return a hash. 
     # If body is nil, or is not JSON, then return nil; don't raise an exception
     #
@@ -56,6 +63,9 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    # response.to_cache -> (JSON string)
+    #
     # Return something that can be serialised in Redis
     #
     def to_cache

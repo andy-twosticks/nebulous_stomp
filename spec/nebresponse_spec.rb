@@ -67,6 +67,18 @@ describe NebResponse do
         expect( z.description ).to eq @datH["description"].strip
       end
 
+      it "doesn't set @description etc unles it finds a verb" do
+        @mess.headers = {"content-type" => 'text'}
+        @mess.body    = "parameters:one\ndescription:two"
+
+        expect{ NebResponse.new(@mess) }.not_to raise_exception
+
+        z = NebResponse.new(@mess)
+        expect( z.verb        ).to eq nil
+        expect( z.parameters  ).to eq nil
+        expect( z.description ).to eq nil
+      end
+
     end
 
 
