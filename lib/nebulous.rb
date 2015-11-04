@@ -33,6 +33,9 @@ module Nebulous
   # Thrown when nothing went wrong, but a timeout expired.
   class NebulousTimeout < StandardError; end
 
+  # Thrown when we can't connect to STOMP or the connection is lost somehow
+  class ConnectionError < NebulousError; end
+
 
   # :call-seq: 
   # Nebulous.init(paramHash) -> (nil)

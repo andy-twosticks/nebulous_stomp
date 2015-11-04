@@ -4,13 +4,13 @@ require 'stomp'
 require 'json'
 require 'time'
 
-require_relative 'optionhandler' #bamf
-
 
 module Nebulous
 
 
   class StompHandler
+
+    attr_reader :client
 
 
     ##
@@ -18,8 +18,7 @@ module Nebulous
     #
     class << self
 
-
-      def body_to_hash (msg)
+      def body_to_hash(msg)
         hash = nil
 
         if msg.headers["content-type"] =~ /json/i
@@ -43,20 +42,52 @@ module Nebulous
       end
 
 
+      ##
+      # Parses body assuming that it's an array of hashes
+      #
+      def body_to_a(msg)
+        #bamf
+      end
+
+
+      ##
+      # :call-seq:
+      #   NebRequest.with_timeout(secs) -> (nil)
+      #
+      # Run a routine with a timeout.
+      #
+      # Example:
+      #  StompHandler.with_timeout(10) do |r|
+      #    sleep 20
+      #    r.signal
+      #  end
+      #
+      # Use `r.signal` to signal when the process has finished. You need to
+      # arrange your own method of working out whether the timeout fired or not.
+      #
+      # There is a Ruby standard library for this, Timeout. But there appears to
+      # be some argument as to whether it is threadsafe; so, we roll our own. It
+      # probably doesn't matter since both Redis and Stomp do use Timeout. But.
+      #
+      def with_timeout(secs)
+        mutex    = Mutex.new
+        resource = ConditionVariable.new
+
+        Thread.new do
+          mutex.synchronize { yield resource }
+        end
+
+        mutex.synchronize { resource.wait(mutex, secs) }
+
+        nil
+      end
+
     end
     ##
 
 
-    def initialize
-      o = OptionHandler.instance
-
-      h = { login:    o.get(:stompLogin),
-            passcode: o.get(:stompPassword),
-            host:     o.get(:stompHost),
-            port:     o.get(:stompPort),
-            ssl:      o.get(:stompSSL) }
-
-      @stomp_hash = { hosts: [h], reliable: false }
+    def initialize(connectHash)
+      @stomp_hash = connectHash
       @client     = nil
     end
 
@@ -65,11 +96,11 @@ module Nebulous
       $logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = Stomp::Client.new( @stomp_hash )
-      raise "Stomp Connection failed" unless @client.open?
+      raise ConnectionError, "Stomp Connection failed" unless @client.open?
 
       conn = @client.connection_frame()
       if conn.command == Stomp::CMD_ERROR
-        raise "Connect Error: #{conn.body}"
+        raise ConnectionError, "Connect Error: #{conn.body}"
       end
 
       self
@@ -77,9 +108,12 @@ module Nebulous
 
 
     def stomp_disconnect
-      $logger.info(__FILE__) {"STOMP Disconnect"}
-      @client.close if @client
-      @client = nil
+      if @client
+        $logger.info(__FILE__) {"STOMP Disconnect"}
+        @client.close if @client
+        @client = nil
+      end
+
       self
     end
 
@@ -87,6 +121,8 @@ module Nebulous
     def stomp_listen(queue)
       $logger.info(__FILE__) {"Subscribing to #{queue}"}
 
+      # Startle the queue into existence. You can't subscribe to a queue that
+      # does not exist, BUT, you can create a queue by posting to it...
       @client.publish( queue, "boo" )
 
       @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
@@ -98,9 +134,9 @@ module Nebulous
         end
       end
 
-      # The above loop is asynchronous; we need to wait.
-      # There does not appear to be a better way than:
-      loop do; sleep 5; end
+      # The above loop is asynchronous; we need to wait. According to the STOMP
+      # gem eaxmples, there does not appear to be a better way than:
+      loop do; sleep 5; end 
     end
 
 
@@ -120,8 +156,12 @@ module Nebulous
     end
 
 
+    ##
+    # Return the neb-reply-id we're going to use for this connection
+    # Return nil if we're not connected yet
+    #
     def calc_reply_id
-      raise "bamf - client not connected error" unless @client
+      raise ConnectionError, "Client not connected" unless @client
 
       @client.connection_frame().headers["session"] \
         << "_" \
@@ -143,7 +183,7 @@ module Nebulous
 
     def respond_error(nebMess,err,fields=[])
       $logger.info(__FILE__) do
-        "Responded to #{nebMess} with 'error' verb: #{err} (#{err.backtrace.first})"
+        "Responded to #{nebMess} with 'error': #{err} (#{err.backtrace.first})"
       end
 
       send_message( nebMess.reply_to,

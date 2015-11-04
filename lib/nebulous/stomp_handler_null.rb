@@ -48,12 +48,17 @@ module Nebulous
       end
 
 
+      def body_to_a
+        # bamf
+      end
+
+
     end
     ##
 
 
-    def initialize
-      @stomp_hash = {}
+    def initialize(hash)
+      @stomp_hash = hash
       @client     = nil
 
       @fakeMess = MessageNull.from_cache('{}')
