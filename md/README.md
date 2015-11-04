@@ -1,31 +1,8 @@
 # Nebulous
 
-TODO: Write a gem description
+'rake -T' to see a menu of common admin options (pushing to the local gem
+server, building ri docs, etc.
 
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'nebulous'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install nebulous
-
-## Usage
-
-TODO: Write usage instructions here
-
-## Contributing
-
-1. Fork it ( https://github.com/[my-github-username]/nebulous/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+See ri for documentation:
+    rake rdoc:ri
+    ri Nebulous::NebRequest etc

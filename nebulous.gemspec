@@ -31,8 +31,11 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "rdoc"
   spec.add_development_dependency "pry"
+  spec.add_development_dependency "pry-doc"
   spec.add_development_dependency "guard"
   spec.add_development_dependency "guard-rspec"
+  spec.add_development_dependency "ripper-tags"
+  spec.add_development_dependency "geminabox"
 
   spec.add_runtime_dependency "stomp", '>=1.3.3'
   spec.add_runtime_dependency "redis", '>=3.1.0'
