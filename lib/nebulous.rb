@@ -2,13 +2,9 @@
 
 require 'stomp'
 require 'redis'
-require 'json'
 
 require 'nebulous/version'
 require 'nebulous/param'
-require 'nebulous/nebrequest'
-require 'nebulous/nebresponse'
-require 'nebulous/redishandler'
 
 
 # A little module that provides request-and-response over STOMP, with optional

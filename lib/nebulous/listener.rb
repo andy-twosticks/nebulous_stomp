@@ -1,11 +1,6 @@
 # COding: UTF-8
 
-require 'stomp'
-require 'json'
-
-require_relative 'optionhandler'
-require_relative 'responder'
-require_relative 'nebmessage_null'
+require_relative 'message_null'
 
 
 module Nebulous

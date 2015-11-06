@@ -18,10 +18,15 @@ module Nebulous
     #
     class << self
 
+
+      ##
+      # Parse body and return something Ruby-ish.
+      # It might not be a hash, in fact -- it could be an array of hashes.
+      #
       def body_to_hash(msg)
         hash = nil
 
-        if msg.headers["content-type"] =~ /json/i
+        if msg.headers["content-type"] =~ /json$/i
           begin
             hash = JSON.parse(msg.body)
           rescue JSON::ParseError, TypeError
@@ -43,16 +48,8 @@ module Nebulous
 
 
       ##
-      # Parses body assuming that it's an array of hashes
-      #
-      def body_to_a(msg)
-        #bamf
-      end
-
-
-      ##
       # :call-seq:
-      #   NebRequest.with_timeout(secs) -> (nil)
+      #   StompHandler.with_timeout(secs) -> (nil)
       #
       # Run a routine with a timeout.
       #
@@ -118,7 +115,10 @@ module Nebulous
     end
 
 
-    def stomp_listen(queue)
+    ##
+    # Block for incoming messages on a queue
+    #
+    def listen(queue)
       $logger.info(__FILE__) {"Subscribing to #{queue}"}
 
       # Startle the queue into existence. You can't subscribe to a queue that
@@ -140,18 +140,42 @@ module Nebulous
     end
 
 
+    ##
+    # As listen() but with a timeout.
+    #
+    # Ideally I'd like to DRY this and listen() up, but with this
+    # yield-within-a-thread stuff going on, I'm actually not sure how to do
+    # that safely.
+    #
+    def listen_with_timeout(queue, timeout)
+      $logger.info(__FILE__) {"Subscribing to #{queue} with timeout #{timeout}"}
+
+      @client.publish( queue, "boo" )
+
+      StompHandler.with_timeout(timeout) do |resource|
+        @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
+
+          begin
+            @client.ack(msg)
+            unless msg.body == 'boo'
+              yield Message.from_stomp(msg) 
+              resource.signal 
+            end
+          rescue =>e
+            $logger.error(__FILE__) {"Error during polling: #{e}" }
+          end
+
+        end
+      end
+
+    end
+
+
+    ##
+    # Send a Message to a queue
+    #
     def send_message(queue, nebMess)
-      headers = { "content-type" => "application/json",  #bamf
-                  "neb-reply-id" => calc_reply_id }
-
-      headers["neb-reply-to"]    = nebMess.reply_to    if nebMess.reply_to
-      headers["neb-in-reply-to"] = nebMess.in_reply_to if nebMess.in_reply_to
-
-      message = {verb: nebMess.verb}
-      message[:parameters]  = nebMess.params if nebMess.params
-      message[:description] = nebMess.desc   if nebMess.desc
-
-      @client.publish(queue, message.to_json, headers)
+      @client.publish(queue, nebMess.stomp_body, nebMess.stomp_header)
       self
     end
 
@@ -170,6 +194,9 @@ module Nebulous
     end
 
 
+    ##
+    # Send a success response to a message
+    #
     def respond_success(nebMess)
       $logger.info(__FILE__) do 
         "Responded to #{nebMess} with 'success' verb"
@@ -181,6 +208,9 @@ module Nebulous
     end
 
 
+    ## 
+    # Send an error response to a message
+    #
     def respond_error(nebMess,err,fields=[])
       $logger.info(__FILE__) do
         "Responded to #{nebMess} with 'error': #{err} (#{err.backtrace.first})"

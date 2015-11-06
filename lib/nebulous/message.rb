@@ -18,12 +18,13 @@ module Nebulous
     attr_accessor :reply_id
 
     # Might be nil: only caught on messages that came directly from STOMP
-    attr_reader :stomp_message, :content_type
+    attr_reader :stomp_message
+    
+    # The content type of the message
+    attr_reader :content_type
 
     attr_reader :verb, :params, :desc
     attr_reader :reply_to, :in_reply_to 
-
-    attr_reader :status #bamf
 
 
     class << self
@@ -81,6 +82,14 @@ module Nebulous
     end
 
 
+    def parameters; @params; end
+
+
+    def content_is_json?
+      @content_type =~ /json$/i
+    end
+
+
     def to_cache
       { stomp_message: @stomp_message,
         verb:          @verb,
@@ -93,13 +102,13 @@ module Nebulous
     end
 
 
-    def fill_from_message
+    def fill_from_message(handler=StompHandler)
       @content_type = @stomp_message.headers['content-type']
       @reply_id     = @stomp_message.headers['neb-reply-id']
       @reply_to     = @stomp_message.headers['neb-reply-to'] 
       @in_reply_to  = @stomp_message.headers['neb-in-reply-to']
 
-      h = StompHandler.body_to_hash(@stomp_message)
+      h = handler.body_to_hash(@stomp_message)
 
       @verb   = h["verb"]
       @params = h["parameters"] || h["params"]
@@ -110,6 +119,44 @@ module Nebulous
       @params = @desc = nil unless @verb
 
       self
+    end
+
+
+    ##
+    # Return the header Hash for the STOMP gem
+    #
+    def stomp_header
+      headers = {"content-type" => @content_type, "neb-reply-id" => @reply_id}
+
+      headers["neb-reply-to"]    = @reply_to    if @reply_to
+      headers["neb-in-reply-to"] = @in_reply_to if @in_reply_to
+    end
+
+
+    ##
+    # Return The Protocol of the message as a hash
+    #
+    def stomp_body
+      hash = protocol_hash
+
+      if content_is_json?
+        hash.to_json
+      else
+        hash.map {|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
+      end
+    end
+
+
+    ##
+    # Return the message body formatted for The Protocol, in JSON.
+    #
+    # Raise an exception if the message body doesn't follow the protocol.
+    #
+    # (We use this as the key for the Redis cache)
+    #
+    def protocol_json
+      raise "no protocol in this message!" unless @verb
+      protocol_hash.to_json
     end
 
 
@@ -124,11 +171,18 @@ module Nebulous
       @reply_to      = hash[:replyTo]
       @reply_id      = hash[:replyId]
       @in_reply_to   = hash[:inReplyTo ]
-      @status        = hash[:status]
+    end
+
+
+    def protocol_hash
+      h = {verb: @verb}
+      h[:parameters]  = @params unless @params.nil?
+      h[:description] = @desc   unless @desc.nil?
     end
 
 
   end
+  ##
 
 
 end

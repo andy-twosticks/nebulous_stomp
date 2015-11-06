@@ -4,7 +4,6 @@ require 'stomp'
 require 'json'
 require 'time'
 
-require_relative 'optionhandler'
 require_relative 'stomp_handler'
 
 
@@ -18,49 +17,8 @@ module Nebulous
   class StompHandlerNull < StompHandler
 
 
-    ##
-    # Class methods
-    #
-    class << self
-
-
-      def body_to_hash (msg)
-        hash = nil
-
-        if msg.headers["content-type"] =~ /json/i
-          begin
-            hash = JSON.parse(msg.body)
-          rescue JSON::ParseError, TypeError
-            hash = {}
-          end
-
-        else
-          # We assume that text looks like STOMP headers, or nothing
-          hash = {}
-          msg.body.split("\n").each do |line|
-            k,v = line.split(':', 2).each{|x| x.strip! }
-            h[k] = v
-          end
-
-        end
-
-        hash
-      end
-
-
-      def body_to_a
-        # bamf
-      end
-
-
-    end
-    ##
-
-
     def initialize(hash)
-      @stomp_hash = hash
-      @client     = nil
-
+      super
       @fakeMess = MessageNull.from_cache('{}')
     end
 
@@ -85,10 +43,12 @@ module Nebulous
     end
 
 
-    def stomp_listen(queue)
+    def listen(queue, timeout = nil)
       $logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
       yield @fakeMess
     end
+
+    alias :listen_with_timeout :listen
 
 
     def send_message(queue, nebMess)
