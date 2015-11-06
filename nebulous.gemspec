@@ -9,8 +9,6 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Andy Jones"]
   spec.email         = ["andy.jones@jameshall.co.uk"]
   spec.summary       = %q{Handles request-and-response messaging via STOMP}
-  #spec.description   = %q{TODO: Write a longer description.}
-  #spec.homepage      = ""
   spec.license       = "Closed"
 
   spec.files         = `hg status -macn0`.split("\x0")
@@ -37,6 +35,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "ripper-tags"
   spec.add_development_dependency "geminabox"
 
-  spec.add_runtime_dependency "stomp", '>=1.3.3'
-  spec.add_runtime_dependency "redis", '>=3.1.0'
+  spec.add_runtime_dependency 'stomp',   '>=1.3'
+  spec.add_runtime_dependency 'redis',   '>=3.1'
+  spec.add_runtime_dependency 'devnull', '~>0.1'
+ 
 end

@@ -32,6 +32,8 @@ module Nebulous
 
       # Build a NebMessage from a (presumably incoming) STOMP message
       def from_stomp(stompMsg)
+        Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
+
         obj = self.new( stompMessage: stompMsg )
         obj.fill_from_message
       end
@@ -39,6 +41,7 @@ module Nebulous
 
       # Build a NebMessage from its components
       def from_parts(replyTo, inReplyTo, verb, params, desc)
+        Nebulous.logger.debug(__FILE__){ "New message from parts" }
 
         self.new( replyTo:     replyTo,
                   inReplyTo:   inReplyTo,
@@ -52,6 +55,7 @@ module Nebulous
 
       # Build a message that replies to an existing NebMessage
       def in_reply_to(nebMsg, verb, params=nil, desc=nil, replyTo=nil)
+        Nebulous.logger.debug(__FILE__){ "New message reply" }
 
         self.new( replyTo:     replyTo,
                   verb:        verb,
@@ -65,6 +69,8 @@ module Nebulous
 
       # To build a Nebmessage from a record in the Redis cache
       def from_cache(json)
+        Nebulous.logger.debug(__FILE__){ "New message from cache" }
+
         hash = JSON.parse(json).inject({}) {|m,(k,v)| m[k.to_sym] = v; m }
         self.new( hash )
       rescue

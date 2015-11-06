@@ -2,6 +2,8 @@
 
 require 'stomp'
 require 'redis'
+require 'loggger'
+require 'devnull'
 
 require 'nebulous/version'
 require 'nebulous/param'
@@ -59,6 +61,23 @@ module Nebulous
   def self.add_target(name, targetHash) # -> nil
     Param.add_target(name, targetHash)
     return nil
+  end
+
+
+  ##
+  # Set an instance of Logger to log stuff to.
+  def self.set_logger(logger)
+    Param.set_logger(:logger, logger)
+  end
+
+
+  ##
+  # Return a Logger instance to log things to.
+  # If one was not given to Param, return a logger instance that
+  # uses a DevNull IO object.
+  #
+  def self.logger
+    Param.get_logger || Logger.new( DevNull.new )
   end
 
 

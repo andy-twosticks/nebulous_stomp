@@ -4,6 +4,7 @@
 module Nebulous
 
 
+  ##
   # 'Singleton' 'object' that stores parameters.
   #
   module Param
@@ -15,6 +16,7 @@ module Nebulous
                       redisConnectHash: {},
                       messageTimeout:   10,
                       cacheTimeout:     120,
+                      logger:           nil,
                       targets:          {} }
 
     # Default hash for each target
@@ -23,6 +25,7 @@ module Nebulous
                        messageTimeout: nil }
 
 
+    ##
     # Set the initial parameter string. This also has the effect of resetting
     # everything. 
     #
@@ -40,6 +43,7 @@ module Nebulous
     end
 
 
+    ##
     # Add a Nebulous target.  Raises NebulousError if anything looks screwy.
     #
     # Parameters:
@@ -63,6 +67,20 @@ module Nebulous
     end
 
 
+
+    ##
+    # Set a logger instance
+    #
+    def set_logger(lg); @logger = lg; end
+
+
+    ##
+    # Get the logger instance
+    #
+    def get_logger; @logger; end
+
+
+    ##
     # Get the whole parameter hash. Probably only useful for testing.
     #
     def get_all()
@@ -70,6 +88,7 @@ module Nebulous
     end
 
 
+    ##
     # Get a the value of the parameter with the key p.
     #
     def get(p)
@@ -77,6 +96,7 @@ module Nebulous
     end
 
 
+    ##
     # Given a target name, return the corresponding target hash 
     #
     def get_target(name)
@@ -87,6 +107,7 @@ module Nebulous
     end
 
 
+    ##
     # Raise an exception if a hash has any keys not found in an exemplar
     #
     # (Private method, only called within Param)

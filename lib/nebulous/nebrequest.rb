@@ -1,5 +1,7 @@
 # coding: UTF-8
 
+require 'nebulous'
+
 require_relative 'stomp_handler'
 require_relative 'redis_handler'
 require_relative 'nebresponse'
@@ -66,6 +68,7 @@ module Nebulous
     #  stompHandler    ONLY FOR TESTING
     #
     def initialize(target, verb, params=nil, desc=nil, stompHandler=nil)
+      Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
       # The target name -- should point to data in the parameter hash
       @target = target                           
