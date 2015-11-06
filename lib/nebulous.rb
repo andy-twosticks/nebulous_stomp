@@ -2,7 +2,7 @@
 
 require 'stomp'
 require 'redis'
-require 'loggger'
+require 'logger'
 require 'devnull'
 
 require 'nebulous/version'
