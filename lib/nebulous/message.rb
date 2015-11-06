@@ -155,6 +155,44 @@ module Nebulous
 
 
     ##
+    # send a new 'success verb' message in response to this one
+    #
+    def respond_success
+      raise "bamf" unless @reply_to
+
+      Nebulous.logger.info(__FILE__) do
+        "Responded to #{self} with 'success' verb"
+      end
+
+      @stomp_client.send_message( @reply_to,
+                                  Message.in_reply_to(self, 'success') )
+
+    end
+
+
+    ##
+    # send a new 'error verb' message in response to this one
+    # err can be a string or an exception
+    #
+    def respond_error(nebMess,err,fields=[])
+      raise "bamf" unless @reply_to
+
+      Nebulous.logger.info(__FILE__) do
+        "Responded to #{nebMess} with 'error': #{err}" << 
+          if err.respond_to?(:backtrace)
+            "(#{err.backtrace.first})"
+          else
+            ""
+          end
+
+      end
+
+      reply = Message.in_reply_to(self, 'error', fields, err.to_s)
+      @stomp_client.send_message( @reply_to, reply )
+    end
+
+
+    ##
     # Return the message body formatted for The Protocol, in JSON.
     #
     # Raise an exception if the message body doesn't follow the protocol.

@@ -83,12 +83,18 @@ module Nebulous
     ##
 
 
+    ##
+    # Initialise StompHandler by passing the parameter hash.
+    #
     def initialize(connectHash)
       @stomp_hash = connectHash
       @client     = nil
     end
 
 
+    ##
+    # Connect to the STOMP client.
+    #
     def stomp_connect
       Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
 
@@ -101,9 +107,15 @@ module Nebulous
       end
 
       self
+
+    rescue => err
+      raise ConnectionError, err
     end
 
 
+    ##
+    # Drop the connection to the STOMP Client
+    #
     def stomp_disconnect
       if @client
         Nebulous.logger.info(__FILE__) {"STOMP Disconnect"}
@@ -116,7 +128,15 @@ module Nebulous
 
 
     ##
-    # Block for incoming messages on a queue
+    # Block for incoming messages on a queue.  Yield each message.
+    #
+    # Note that the blocking happens in a thread somewhere inside the STOMP
+    # client. I have no idea how to join that, and if the examples on the STOMP
+    # gem are to be believed, you flat out can't -- the examples just have the
+    # main thread sleeping so that it does not termimate while the thread is
+    # running.  So to use this make sure that you at some point do something
+    # like:
+    #     loop; sleep 5; end
     #
     def listen(queue)
       Nebulous.logger.info(__FILE__) {"Subscribing to #{queue}"}
@@ -134,14 +154,12 @@ module Nebulous
         end
       end
 
-      # The above loop is asynchronous; we need to wait. According to the STOMP
-      # gem eaxmples, there does not appear to be a better way than:
-      loop do; sleep 5; end 
     end
 
 
     ##
-    # As listen() but with a timeout.
+    # As listen() but give up after yielding a single message, and only wait
+    # for a set number of seconds before giving up anyway.
     #
     # Ideally I'd like to DRY this and listen() up, but with this
     # yield-within-a-thread stuff going on, I'm actually not sure how to do
@@ -174,11 +192,11 @@ module Nebulous
 
 
     ##
-    # Send a Message to a queue
+    # Send a Message to a queue; return the message.
     #
     def send_message(queue, nebMess)
       @client.publish(queue, nebMess.stomp_body, nebMess.stomp_header)
-      self
+      nebMess
     end
 
 
@@ -195,36 +213,8 @@ module Nebulous
     end
 
 
-    ##
-    # Send a success response to a message
-    #
-    def respond_success(nebMess)
-      Nebulous.logger.info(__FILE__) do 
-        "Responded to #{nebMess} with 'success' verb"
-      end
-
-      send_message( nebMess.reply_to, 
-                    Message.in_reply_to(nebMess, 'success') )
-
-    end
-
-
-    ## 
-    # Send an error response to a message
-    #
-    def respond_error(nebMess,err,fields=[])
-      Nebulous.logger.info(__FILE__) do
-        "Responded to #{nebMess} with 'error': #{err} (#{err.backtrace.first})"
-      end
-
-      send_message( nebMess.reply_to,
-                    Message.in_reply_to(nebMess, 'error', fields, err.to_s) )
-
-    end
-
-
-
   end
+  ##
 
 
 end
