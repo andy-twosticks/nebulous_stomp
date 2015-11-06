@@ -90,7 +90,7 @@ module Nebulous
 
 
     def stomp_connect
-      $logger.info(__FILE__) {"Connecting to STOMP"} 
+      #$logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = Stomp::Client.new( @stomp_hash )
       raise ConnectionError, "Stomp Connection failed" unless @client.open?
@@ -106,7 +106,7 @@ module Nebulous
 
     def stomp_disconnect
       if @client
-        $logger.info(__FILE__) {"STOMP Disconnect"}
+        #$logger.info(__FILE__) {"STOMP Disconnect"}
         @client.close if @client
         @client = nil
       end
@@ -119,7 +119,7 @@ module Nebulous
     # Block for incoming messages on a queue
     #
     def listen(queue)
-      $logger.info(__FILE__) {"Subscribing to #{queue}"}
+      #$logger.info(__FILE__) {"Subscribing to #{queue}"}
 
       # Startle the queue into existence. You can't subscribe to a queue that
       # does not exist, BUT, you can create a queue by posting to it...
@@ -130,7 +130,7 @@ module Nebulous
           yield Message.from_stomp(msg) unless msg.body == 'boo'
           @client.ack(msg)
         rescue =>e
-          $logger.error(__FILE__) {"Error during polling: #{e}" }
+          #$logger.error(__FILE__) {"Error during polling: #{e}" }
         end
       end
 
@@ -148,7 +148,7 @@ module Nebulous
     # that safely.
     #
     def listen_with_timeout(queue, timeout)
-      $logger.info(__FILE__) {"Subscribing to #{queue} with timeout #{timeout}"}
+      #$logger.info(__FILE__) {"Subscribing to #{queue} with timeout #{timeout}"}
 
       @client.publish( queue, "boo" )
 
@@ -162,7 +162,7 @@ module Nebulous
               resource.signal 
             end
           rescue =>e
-            $logger.error(__FILE__) {"Error during polling: #{e}" }
+            #$logger.error(__FILE__) {"Error during polling: #{e}" }
           end
 
         end
@@ -182,7 +182,6 @@ module Nebulous
 
     ##
     # Return the neb-reply-id we're going to use for this connection
-    # Return nil if we're not connected yet
     #
     def calc_reply_id
       raise ConnectionError, "Client not connected" unless @client
@@ -198,9 +197,9 @@ module Nebulous
     # Send a success response to a message
     #
     def respond_success(nebMess)
-      $logger.info(__FILE__) do 
-        "Responded to #{nebMess} with 'success' verb"
-      end
+      #$logger.info(__FILE__) do 
+        #"Responded to #{nebMess} with 'success' verb"
+      #end
 
       send_message( nebMess.reply_to, 
                     Message.in_reply_to(nebMess, 'success') )
@@ -212,9 +211,9 @@ module Nebulous
     # Send an error response to a message
     #
     def respond_error(nebMess,err,fields=[])
-      $logger.info(__FILE__) do
-        "Responded to #{nebMess} with 'error': #{err} (#{err.backtrace.first})"
-      end
+      #$logger.info(__FILE__) do
+        #"Responded to #{nebMess} with 'error': #{err} (#{err.backtrace.first})"
+      #end
 
       send_message( nebMess.reply_to,
                     Message.in_reply_to(nebMess, 'error', fields, err.to_s) )

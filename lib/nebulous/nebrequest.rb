@@ -204,7 +204,8 @@ module Nebulous
     #
     def neb_connect
       @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
-      @replyID = @stomp_handler.calc_replyID 
+      @stomp_handler.stomp_connect
+      @replyID = @stomp_handler.calc_reply_id
       self
     end
 
@@ -229,6 +230,7 @@ module Nebulous
     def neb_qna(mTimeout)
       @stomp_handler.send_message(@requestQ, @message)
 
+      response = nil
       @stomp_handler.listen_with_timeout(@responseQ, mTimeout) do |msg|
         response = msg
       end

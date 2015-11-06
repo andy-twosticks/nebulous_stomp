@@ -2,6 +2,8 @@ require 'spec_helper'
 
 include Nebulous
 
+require 'nebulous/nebrequest'
+
 
 describe NebRequest do
 
@@ -35,7 +37,7 @@ describe NebRequest do
                    :cacheTimeout     => 20 )
 
     Nebulous.add_target( :accord, 
-                         :sendQueue      => "/queue/laplace.in",
+                         :sendQueue      => "/queue/laplace.dev",
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
 
@@ -65,7 +67,7 @@ describe NebRequest do
                      :cacheTimeout     => 20 )
 
       Nebulous.add_target( :accord, 
-                           :sendQueue      => "/queue/laplace.in",
+                           :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
       expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(5)

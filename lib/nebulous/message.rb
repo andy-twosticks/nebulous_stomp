@@ -127,9 +127,10 @@ module Nebulous
     #
     def stomp_header
       headers = {"content-type" => @content_type, "neb-reply-id" => @reply_id}
-
       headers["neb-reply-to"]    = @reply_to    if @reply_to
       headers["neb-in-reply-to"] = @in_reply_to if @in_reply_to
+
+      headers
     end
 
 
@@ -178,6 +179,8 @@ module Nebulous
       h = {verb: @verb}
       h[:parameters]  = @params unless @params.nil?
       h[:description] = @desc   unless @desc.nil?
+
+      h
     end
 
 
