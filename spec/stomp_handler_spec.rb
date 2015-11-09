@@ -5,22 +5,65 @@ require 'nebulous/stomp_handler'
 include Nebulous
 
 
-describe 'body_to_hash' do
+describe 'StompHandler.body_to_hash' do
+
+  def message(contentType, body)
+    Stomp::Message.new( [ 'MESSAGE',
+                          'destination:/queue/foo',
+                          'message-id:999',
+                          "content-type:#{contentType}",
+                          '',
+                          body ].join("\n") + "\0" )
+  end
+
 
   it "raises an error unless it is given a STOMP message" do
     expect{ StompHandler.body_to_hash()      }.to raise_exception ArgumentError
     expect{ StompHandler.body_to_hash('foo') }.to raise_exception ArgumentError
   end
 
-  it "always returns a hash or an array of hashes"
-  
   context "when the content type is JSON" do
-    it "parses the json"
+
+    it "parses the json" do
+      body = {'one' => 'two', 'three' => [4,5]}
+      msg = message('application/json', body.to_json)
+      expect( StompHandler.body_to_hash(msg) ).to eq body
+
+      body = [ {'one' => 2, 'three' => 4}, {'five' => 6} ]
+      msg = message('application/json', body.to_json)
+      expect( StompHandler.body_to_hash(msg) ).to eq body
+    end
+
   end
 
   context "when the content type is not JSON" do
-    it "assumes text lines in key:value format"
+
+    it "assumes text lines in key:value format" do
+      # Note that all values will be strings, and we can't support arrays.
+      result = {'one' => 'two', 'three' => '4'}
+      body = result.map{|k,v| "#{k}:#{v}" }.join("\n")
+      msg = message('application/text', body )
+
+      expect( StompHandler.body_to_hash(msg) ).to eq result
+    end
+
   end
+
+  it "returns a hash or an array of hashes" do
+    # lets check some corner cases to ensure this
+    msg = message('appplication/json', ''.to_json)
+    expect( StompHandler.body_to_hash(msg) ).to eq({})
+
+    msg = message('appplication/json', nil.to_json)
+    expect( StompHandler.body_to_hash(msg) ).to eq({})
+
+    msg = message('appplication/text', '')
+    expect( StompHandler.body_to_hash(msg) ).to eq({})
+
+    msg = message('appplication/text', nil)
+    expect( StompHandler.body_to_hash(msg) ).to eq({})
+  end
+
 
 end
 
@@ -95,7 +138,7 @@ describe StompHandler do
     end
 
     it "returns self" do
-      expect(@sh.stomp_connect).to eq sh
+      expect(@sh.stomp_connect).to eq @sh
     end
 
     it "sets @client to an instance of STOMP::Client" do
@@ -107,9 +150,34 @@ describe StompHandler do
   end
 
 
+  describe "#stomp_disconnect" do
+
+    # in passing we test #connected? -- there doesn't seem to be a way (or a
+    # point) to test it seperately.
+    
+    it "disconnects!" do
+      @sh.stomp_connect
+      @sh.stomp_disconnect
+
+      expect( @sh ).not_to be_connected
+    end
+
+  end
+
+
   describe "#calc_reply_id" do
-    it "raises an error if the client is not connected"
-    it "returns a unique string"
+
+    it "raises an error if the client is not connected" do
+      @sh.stomp_disconnect
+      expect{ @sh.calc_reply_id }.to raise_exception Nebulous::ConnectionError
+    end
+
+
+    it "returns a unique string" do
+      @sh.stomp_connect
+      expect( @sh.calc_reply_id ).to respond_to :upcase
+      expect( @sh.calc_reply_id.size ).to be > 12
+    end
   end
 
 

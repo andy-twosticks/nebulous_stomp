@@ -24,12 +24,15 @@ module Nebulous
       # It might not be a hash, in fact -- it could be an array of hashes.
       #
       def body_to_hash(msg)
+        raise ArgumentError, "message is not a STOMP message" \
+          unless msg.respond_to?(:headers) && msg.respond_to?(:body)
+
         hash = nil
 
         if msg.headers["content-type"] =~ /json$/i
           begin
             hash = JSON.parse(msg.body)
-          rescue JSON::ParseError, TypeError
+          rescue JSON::ParserError, TypeError
             hash = {}
           end
 
@@ -38,7 +41,7 @@ module Nebulous
           hash = {}
           msg.body.split("\n").each do |line|
             k,v = line.split(':', 2).each{|x| x.strip! }
-            h[k] = v
+            hash[k] = v
           end
 
         end
@@ -99,7 +102,7 @@ module Nebulous
       Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = Stomp::Client.new( @stomp_hash )
-      raise ConnectionError, "Stomp Connection failed" unless @client.open?
+      raise ConnectionError, "Stomp Connection failed" unless connected?
 
       conn = @client.connection_frame()
       if conn.command == Stomp::CMD_ERROR
@@ -124,6 +127,14 @@ module Nebulous
       end
 
       self
+    end
+
+
+    ##
+    # return true if we are connected to the STOMP server
+    #
+    def connected?
+      @client && @client.open?
     end
 
 
