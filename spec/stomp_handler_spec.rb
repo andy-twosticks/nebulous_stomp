@@ -1,6 +1,7 @@
 require 'spec_helper'
 
 require 'nebulous/stomp_handler'
+require 'nebulous/message'
 
 include Nebulous
 
@@ -66,6 +67,7 @@ describe 'StompHandler.body_to_hash' do
 
 
 end
+##
 
 
 # with_timeout is kind of hard to test?
@@ -126,6 +128,7 @@ describe StompHandler do
     end
 
   end
+  ##
 
 
   describe "#stomp_connect" do
@@ -147,7 +150,16 @@ describe StompHandler do
       expect(@sh.client).to be_a Stomp::Client 
     end
 
+    it "connects to the STOMP server" do
+      # in passing we test #connected? -- there doesn't seem to be a way (or a
+      # point) to test it seperately.
+      
+      @sh.stomp_connect
+      expect( @sh ).to be_connected
+    end
+
   end
+  ##
 
 
   describe "#stomp_disconnect" do
@@ -163,6 +175,7 @@ describe StompHandler do
     end
 
   end
+  ##
 
 
   describe "#calc_reply_id" do
@@ -174,33 +187,94 @@ describe StompHandler do
 
 
     it "returns a unique string" do
+      # I can't actually check that the string is unique, so this is kinda weak
       @sh.stomp_connect
       expect( @sh.calc_reply_id ).to respond_to :upcase
       expect( @sh.calc_reply_id.size ).to be > 12
     end
   end
+  ##
 
 
   describe "send_message" do
-    it "accepts a Message"
-    it "puts the message on the given queue"
-    it "returns self"
+    # We're kind of navel gazing here because send_message is just one line: a
+    # call to @client.publish. Still, call it a warming up exercise....
+    
+    before do
+      @client = double( Stomp::Client ).as_null_object
+      @sh     = StompHandler.new(@stomph, @client)
+      @sh.stomp_connect
+
+      @mess = Nebulous::Message.from_parts(nil, nil, 'foo', nil, nil)
+    end
+
+    it "accepts a queue name and a Message" do
+      expect{ @sh.send_message        }.to raise_exception ArgumentError
+      expect{ @sh.send_message('foo') }.to raise_exception ArgumentError
+      expect{ @sh.send_message(1,2,3) }.to raise_exception ArgumentError
+      expect{ @sh.send_message('foo', 12) }.
+        to raise_exception Nebulous::NebulousError
+
+      expect{ @sh.send_message('foo', @mess) }.not_to raise_exception
+    end
+
+    it "returns the message" do
+      expect( @sh.send_message('foo', @mess) ).to eq @mess
+    end
+
+    it "tries to publish the message" do
+      expect(@client).to receive(:publish)
+      @sh.send_message('foo', @mess)
+    end
+
+    it "tries to reconnect if the client is not connected" do
+      @sh.stomp_disconnect
+
+      expect(@client).to receive(:publish)
+      @sh.send_message('foo', @mess)
+      expect{ @sh.send_message('foo', @mess) }.not_to raise_exception
+    end
+
   end
+  ##
 
 
   describe "#listen" do
-    it "raises a ConnectionError if the client is not connected"
+
+    before do
+      @client = double( Stomp::Client ).as_null_object
+      @sh     = StompHandler.new(@stomph, @client)
+      @sh.stomp_connect
+
+      @mess = Nebulous::Message.from_parts(nil, nil, 'foo', nil, nil)
+    end
+
+    it "tries to reconnect if the client is not connected" do
+      @sh.stomp_disconnect
+      expect(@client).to receive(:publish)
+      expect{ @sh.listen('foo') }.not_to raise_exception
+    end
+
     it "yields an instance of Message if it gets a response on the given queue"
+
     it "continues blocking after receiving a message"
+
   end
+  ##
 
 
   describe "listen_with_timeout" do
-    it "raises a ConnectionError if the client is not connected"
+
+    it "tries to reconnect if the client is not connected"
+
     it "yields an instance of Message if it gets a response on the given queue"
+
     it "stops after the first message"
+
     it "stops after a timeout"
+
   end
+  ##
 
 
 end 

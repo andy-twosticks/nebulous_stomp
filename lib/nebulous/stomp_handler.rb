@@ -3,6 +3,7 @@
 require 'stomp'
 require 'json'
 require 'time'
+#require 'pry' #bamf
 
 
 module Nebulous
@@ -88,10 +89,12 @@ module Nebulous
 
     ##
     # Initialise StompHandler by passing the parameter hash.
+    # ONLY set testClient when testing.
     #
-    def initialize(connectHash)
-      @stomp_hash = connectHash
-      @client     = nil
+    def initialize(connectHash, testClient=nil)
+      @stomp_hash  = connectHash
+      @test_client = testClient
+      @client      = nil
     end
 
 
@@ -101,7 +104,7 @@ module Nebulous
     def stomp_connect
       Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
 
-      @client = Stomp::Client.new( @stomp_hash )
+      @client = @test_client || Stomp::Client.new( @stomp_hash )
       raise ConnectionError, "Stomp Connection failed" unless connected?
 
       conn = @client.connection_frame()
@@ -152,6 +155,8 @@ module Nebulous
     def listen(queue)
       Nebulous.logger.info(__FILE__) {"Subscribing to #{queue}"}
 
+      stomp_connect unless @client
+
       # Startle the queue into existence. You can't subscribe to a queue that
       # does not exist, BUT, you can create a queue by posting to it...
       @client.publish( queue, "boo" )
@@ -181,6 +186,8 @@ module Nebulous
         "Subscribing to #{queue} with timeout #{timeout}"
       end
 
+      stomp_connect unless @client
+
       @client.publish( queue, "boo" )
 
       StompHandler.with_timeout(timeout) do |resource|
@@ -206,6 +213,11 @@ module Nebulous
     # Send a Message to a queue; return the message.
     #
     def send_message(queue, nebMess)
+      raise Nebulous::NebulousError, "That's not a Message" \
+        unless nebMess.respond_to?(:stomp_body) \
+            && nebMess.respond_to?(:stomp_header)
+
+      stomp_connect unless @client
       @client.publish(queue, nebMess.stomp_body, nebMess.stomp_header)
       nebMess
     end
