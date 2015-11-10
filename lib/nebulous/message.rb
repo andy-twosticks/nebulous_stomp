@@ -30,17 +30,17 @@ module Nebulous
     class << self
 
 
-      # Build a NebMessage from a (presumably incoming) STOMP message
-      def from_stomp(stompMsg)
-        Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
-
-        obj = self.new( stompMessage: stompMsg )
-        obj.fill_from_message
-      end
-
-
-      # Build a NebMessage from its components
+      ##
+      # Build a Message from its components.
+      #
+      # Note that we assume a content type of JSON. But if we are building a
+      # message by hand in Ruby, this is only reasonable.
+      #
+      # You must pass a verb; you can pass nil for all the other values.
+      #
       def from_parts(replyTo, inReplyTo, verb, params, desc)
+        raise ArgumentError, "missing parts" unless verb
+
         Nebulous.logger.debug(__FILE__){ "New message from parts" }
 
         self.new( replyTo:     replyTo,
@@ -53,18 +53,37 @@ module Nebulous
       end
 
 
-      # Build a message that replies to an existing NebMessage
-      def in_reply_to(nebMsg, verb, params=nil, desc=nil, replyTo=nil)
+      ##
+      # Build a Message that replies to an existing Message
+      #
+      def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)
+        raise ArgumentError, 'bad message' unless msg.kind_of? Message
+
         Nebulous.logger.debug(__FILE__){ "New message reply" }
 
         self.new( replyTo:     replyTo,
                   verb:        verb,
                   params:      params,
                   desc:        desc,
-                  inReplyTo:   nebMsg.reply_id,
-                  contentType: nebMsg.content_type )
+                  inReplyTo:   msg.reply_id,
+                  contentType: msg.content_type )
 
       end
+      
+
+      ##
+      # Build a Message from a (presumably incoming) STOMP message
+      #
+      def from_stomp(stompMsg)
+        raise ArgumentError, 'not a stomp message' \
+          unless stompMsg.kind_of? Stomp::Message
+
+        Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
+
+        obj = self.new( stompMessage: stompMsg )
+        obj.fill_from_message
+      end
+
 
 
       # To build a Nebmessage from a record in the Redis cache
@@ -72,9 +91,13 @@ module Nebulous
         Nebulous.logger.debug(__FILE__){ "New message from cache" }
 
         hash = JSON.parse(json).inject({}) {|m,(k,v)| m[k.to_sym] = v; m }
+        raise ArgumentError, 'Empty cache entry' if hash == {}
+        raise ArgumentError, 'cache entry has no stomp_message key' \
+          if hash[:stompMessage].nil?
+
         self.new( hash )
       rescue
-        raise "Bad JSON, bamf"
+        raise ArgumentError, 'Bad JSON'
       end
 
     end
@@ -97,13 +120,14 @@ module Nebulous
 
 
     def to_cache
-      { stomp_message: @stomp_message,
-        verb:          @verb,
-        params:        @params,
-        desc:          @desc,
-        reply_to:      @reply_to,
-        reply_id:      @reply_id,
-        in_reply_to:   @in_reply_to }
+      { stompMessage: @stomp_message,
+        verb:         @verb,
+        params:       @params,
+        desc:         @desc,
+        replyTo:      @reply_to,
+        replyId:      @reply_id,
+        inReplyTo:    @in_reply_to,
+        contentType:  @content_type }
 
     end
 
@@ -215,7 +239,8 @@ module Nebulous
       @desc          = hash[:desc]
       @reply_to      = hash[:replyTo]
       @reply_id      = hash[:replyId]
-      @in_reply_to   = hash[:inReplyTo ]
+      @in_reply_to   = hash[:inReplyTo]
+      @content_type  = hash[:contentType]
     end
 
 

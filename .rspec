@@ -1,9 +1,8 @@
 --color
 --require spec_helper
---require doc_no_pending
+#--require doc_no_pending
 --require nebulous
 -I .
---format progress
 
 #--fail-fast
 #--format documentation
