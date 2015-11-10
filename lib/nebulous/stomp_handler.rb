@@ -3,7 +3,7 @@
 require 'stomp'
 require 'json'
 require 'time'
-#require 'pry' #bamf
+require 'pry' #bamf
 
 
 module Nebulous
@@ -66,6 +66,11 @@ module Nebulous
       # Use `r.signal` to signal when the process has finished. You need to
       # arrange your own method of working out whether the timeout fired or not.
       #
+      # Also, please note that when the timeout period expires, your code will
+      # keep running. The timeout will only be honoured when your block
+      # completes. This is very useful for Stomp.subscribe, but probably not
+      # for anything else...
+      #
       # There is a Ruby standard library for this, Timeout. But there appears to
       # be some argument as to whether it is threadsafe; so, we roll our own. It
       # probably doesn't matter since both Redis and Stomp do use Timeout. But.
@@ -74,7 +79,7 @@ module Nebulous
         mutex    = Mutex.new
         resource = ConditionVariable.new
 
-        Thread.new do
+        t = Thread.new do
           mutex.synchronize { yield resource }
         end
 
@@ -163,8 +168,8 @@ module Nebulous
 
       @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
         begin
-          yield Message.from_stomp(msg) unless msg.body == 'boo'
           @client.ack(msg)
+          yield Message.from_stomp(msg) unless msg.body == 'boo'
         rescue =>e
           Nebulous.logger.error(__FILE__) {"Error during polling: #{e}" }
         end
@@ -181,6 +186,9 @@ module Nebulous
     # yield-within-a-thread stuff going on, I'm actually not sure how to do
     # that safely.
     #
+    # Actually i'm not even sure how to stop once I've read one message. The
+    # Stomp gem behaves very strangely.
+    #
     def listen_with_timeout(queue, timeout)
       Nebulous.logger.info(__FILE__) do
         "Subscribing to #{queue} with timeout #{timeout}"
@@ -191,20 +199,25 @@ module Nebulous
       @client.publish( queue, "boo" )
 
       StompHandler.with_timeout(timeout) do |resource|
+        done = false
+
         @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
 
           begin
-            @client.ack(msg)
-            unless msg.body == 'boo'
+            if msg.body == 'boo'
+              @client.ack(msg)
+            elsif done == false
               yield Message.from_stomp(msg) 
-              resource.signal 
+              done = true
             end
           rescue =>e
             Nebulous.logger.error(__FILE__) {"Error during polling: #{e}" }
           end
 
         end
-      end
+
+        resource.signal if done #not that this seems to do any good.
+      end 
 
     end
 
