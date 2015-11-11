@@ -21,18 +21,18 @@ module Nebulous
 
 
       ##
-      # Parse body and return something Ruby-ish.
+      # Parse stomp headers & body and return body as something Ruby-ish.
       # It might not be a hash, in fact -- it could be an array of hashes.
       #
-      def body_to_hash(msg)
-        raise ArgumentError, "message is not a STOMP message" \
-          unless msg.respond_to?(:headers) && msg.respond_to?(:body)
+      def body_to_hash(headers, body)
+        raise ArgumentError, "headers is not a hash" \
+          unless headers.kind_of? Hash
 
         hash = nil
 
-        if msg.headers["content-type"] =~ /json$/i
+        if headers["content-type"] =~ /json$/i
           begin
-            hash = JSON.parse(msg.body)
+            hash = JSON.parse(body)
           rescue JSON::ParserError, TypeError
             hash = {}
           end
@@ -40,7 +40,7 @@ module Nebulous
         else
           # We assume that text looks like STOMP headers, or nothing
           hash = {}
-          msg.body.split("\n").each do |line|
+          body.split("\n").each do |line|
             k,v = line.split(':', 2).each{|x| x.strip! }
             hash[k] = v
           end
@@ -216,7 +216,8 @@ module Nebulous
 
         end
 
-        resource.signal if done #not that this seems to do any good.
+        # Not that this seems to do any good when the Stomp gem is in play, but:
+        resource.signal if done 
       end 
 
     end
@@ -225,14 +226,14 @@ module Nebulous
     ##
     # Send a Message to a queue; return the message.
     #
-    def send_message(queue, nebMess)
+    def send_message(queue, mess)
       raise Nebulous::NebulousError, "That's not a Message" \
-        unless nebMess.respond_to?(:stomp_body) \
-            && nebMess.respond_to?(:stomp_header)
+        unless mess.respond_to?(:body_for_stomp) \
+            && mess.respond_to?(:headers_for_stomp)
 
       stomp_connect unless @client
-      @client.publish(queue, nebMess.stomp_body, nebMess.stomp_header)
-      nebMess
+      @client.publish(queue, mess.body_for_stomp, mess.headers_for_stomp)
+      mess
     end
 
 

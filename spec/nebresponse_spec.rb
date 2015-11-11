@@ -12,7 +12,6 @@ describe NebResponse do
               "description" => "test " }
 
     @datS = @datH.reduce([]) {|m,(k,v)| m << "#{k}:#{v}" }.join("\n")
-
   end
 
 
@@ -23,7 +22,7 @@ describe NebResponse do
 
         x = @datH.merge( {"headers" => "headers", "body" => "body"} )
 
-        expect{ NebResponse.new(x.to_json) }.not_to raise_exception
+        expect{ NebResponse.from_cache(x.to_json) }.not_to raise_exception
 
         y = NebResponse.new(x.to_json)
         expect( y.headers     ).to eq x["headers"]
@@ -44,7 +43,7 @@ describe NebResponse do
         @mess.headers = {"content-type" => "JSON"}
         @mess.body    = @datH.to_json
 
-        expect{ NebResponse.new(@mess) }.not_to raise_exception
+        expect{ NebResponse.from_stomp(@mess) }.not_to raise_exception
 
         z = NebResponse.new(@mess)
         expect( z.headers     ).to eq @mess.headers

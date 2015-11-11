@@ -23,7 +23,7 @@ module Nebulous
     # Return the message headers from the stomp message
     #
     def headers
-      @stomp_message ? @stomp_message.headers : nil
+      @stomp_message ? @stomp_headers : nil
     end
 
 
@@ -31,7 +31,7 @@ module Nebulous
     # Return the message body from the stomp message
     #
     def body
-      @stomp_message ? @stomp_message.body : nil
+      @stomp_message ? @stomp_body : nil
     end
 
 
@@ -43,10 +43,8 @@ module Nebulous
     # If body is nil, or is not JSON, then return nil; don't raise an exception
     #
     def body_to_h
-      JSON::parse(body)
-
-    rescue JSON::ParserError, TypeError
-      return nil
+      x = StompHandler.body_to_h(headers, body) 
+      x == {} ? nil : x
     end
 
 

@@ -18,7 +18,7 @@ module Nebulous
     attr_accessor :reply_id
 
     # Might be nil: only caught on messages that came directly from STOMP
-    attr_reader :stomp_message
+    attr_reader :stomp_headers, :stomp_body
     
     # The content type of the message
     attr_reader :content_type
@@ -80,47 +80,61 @@ module Nebulous
 
         Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
 
-        obj = self.new( stompMessage: stompMsg )
-        obj.fill_from_message
+        obj = self.new( stompHeaders: stompMsg.headers,
+                        stompBody:    stompMsg.body )
+
+        #obj.fill_from_message bamf
       end
 
 
 
+      ##
       # To build a Nebmessage from a record in the Redis cache
+      # 
       def from_cache(json)
+        raise ArgumentError, "That can''t be JSON, it''s not a string" \
+          unless json.kind_of? String
+
         Nebulous.logger.debug(__FILE__){ "New message from cache" }
 
-        hash = JSON.parse(json).inject({}) {|m,(k,v)| m[k.to_sym] = v; m }
+        hash = JSON.parse(json, :symbolize_names => true)
         raise ArgumentError, 'Empty cache entry' if hash == {}
-        raise ArgumentError, 'cache entry has no stomp_message key' \
-          if hash[:stompMessage].nil?
 
         self.new( hash )
-      rescue
-        raise ArgumentError, 'Bad JSON'
+
+      rescue => err
+        raise ArgumentError, "Bad JSON: #{err.message}"
       end
 
     end
     ##
 
 
+    alias :parameters  :params
+    alias :description :desc
+
+
     def to_s
-      "<NebMessage[#{@reply_id}] to:#{@reply_to} r-to:#{@in_reply_to} " \
-        << "v:#{@verb} p:#{@params}>"
+      "<Message[#{@reply_id}] to:#{@reply_to} r-to:#{@in_reply_to} " \
+        << "v:#{@verb}>"
 
     end
 
 
-    def parameters; @params; end
-
-
+    ##
+    # true if the content type appears to be JSON-y
+    #
     def content_is_json?
-      @content_type =~ /json$/i
+      @content_type =~ /json$/i ? true : false
     end
 
 
+    ##
+    # Output a hash for serialization to the cache.
+    #
     def to_cache
-      { stompMessage: @stomp_message,
+      { stompHeaders: @stomp_headers,
+        stompBody:    @stomp_body,
         verb:         @verb,
         params:       @params,
         desc:         @desc,
@@ -132,31 +146,12 @@ module Nebulous
     end
 
 
-    def fill_from_message(handler=StompHandler)
-      @content_type = @stomp_message.headers['content-type']
-      @reply_id     = @stomp_message.headers['neb-reply-id']
-      @reply_to     = @stomp_message.headers['neb-reply-to'] 
-      @in_reply_to  = @stomp_message.headers['neb-in-reply-to']
-
-      h = handler.body_to_hash(@stomp_message)
-
-      @verb   = h["verb"]
-      @params = h["parameters"] || h["params"]
-      @desc   = h["description"] || h["desc"]
-
-      # Assume that if verb is missing, the other two are just part of a
-      # response which has nothing to do with the protocol
-      @params = @desc = nil unless @verb
-
-      self
-    end
-
-
-    ##
-    # Return the header Hash for the STOMP gem
+    # Return the hash of additional headers for the Stomp gem
     #
-    def stomp_header
-      headers = {"content-type" => @content_type, "neb-reply-id" => @reply_id}
+    def headers_for_stomp
+      headers = { "content-type" => @content_type, 
+                  "neb-reply-id" => @reply_id }
+
       headers["neb-reply-to"]    = @reply_to    if @reply_to
       headers["neb-in-reply-to"] = @in_reply_to if @in_reply_to
 
@@ -165,9 +160,9 @@ module Nebulous
 
 
     ##
-    # Return The Protocol of the message as a hash
+    # Return a body object for the Stomp gem
     #
-    def stomp_body
+    def body_for_stomp
       hash = protocol_hash
 
       if content_is_json?
@@ -179,44 +174,6 @@ module Nebulous
 
 
     ##
-    # send a new 'success verb' message in response to this one
-    #
-    def respond_success
-      raise "bamf" unless @reply_to
-
-      Nebulous.logger.info(__FILE__) do
-        "Responded to #{self} with 'success' verb"
-      end
-
-      @stomp_client.send_message( @reply_to,
-                                  Message.in_reply_to(self, 'success') )
-
-    end
-
-
-    ##
-    # send a new 'error verb' message in response to this one
-    # err can be a string or an exception
-    #
-    def respond_error(nebMess,err,fields=[])
-      raise "bamf" unless @reply_to
-
-      Nebulous.logger.info(__FILE__) do
-        "Responded to #{nebMess} with 'error': #{err}" << 
-          if err.respond_to?(:backtrace)
-            "(#{err.backtrace.first})"
-          else
-            ""
-          end
-
-      end
-
-      reply = Message.in_reply_to(self, 'error', fields, err.to_s)
-      @stomp_client.send_message( @reply_to, reply )
-    end
-
-
-    ##
     # Return the message body formatted for The Protocol, in JSON.
     #
     # Raise an exception if the message body doesn't follow the protocol.
@@ -224,26 +181,76 @@ module Nebulous
     # (We use this as the key for the Redis cache)
     #
     def protocol_json
-      raise "no protocol in this message!" unless @verb
+      raise NebulousError, "no protocol in this message!" unless @verb
       protocol_hash.to_json
+    end
+
+
+    ##
+    # Make a new 'success verb' message in response to this one
+    #
+    # returns [queue, message] so you can just pass it to
+    # stomphandler.send_message.
+    #
+    def respond_success
+      raise NebulousError, "Don''t know who to reply to" unless @reply_to
+
+      Nebulous.logger.info(__FILE__) do
+        "Responded to #{self} with 'success' verb"
+      end
+
+      [ @reply_to, Message.in_reply_to(self, 'success') ]
+    end
+
+
+    ##
+    # Make a new 'error verb' message in response to this one
+    #
+    # err can be a string or an exception
+    #
+    # returns [queue, message] so you can just pass it to
+    # stomphandler.send_message.
+    #
+    def respond_error(err,fields=[])
+      raise NebulousError, "Don''t know who to reply to" unless @reply_to
+
+      Nebulous.logger.info(__FILE__) do
+        "Responded to #{self} with 'error': #{err}" 
+      end
+
+      reply = Message.in_reply_to(self, 'error', fields, err.to_s)
+
+      [ @reply_to, reply ]
     end
 
 
     private
 
 
+    ##
+    # Create a record -- note that you can't call this directly on the class;
+    # you have to call Message.from_parts, .from_stomp, .from_cache or
+    # .in_reply_to.
+    #
     def initialize(hash)
-      @stomp_message = hash[:stompMessage]
-      @verb          = hash[:verb]
-      @params        = hash[:params]
-      @desc          = hash[:desc]
-      @reply_to      = hash[:replyTo]
-      @reply_id      = hash[:replyId]
-      @in_reply_to   = hash[:inReplyTo]
-      @content_type  = hash[:contentType]
+      @stomp_headers = hash[:stompHeaders]
+      @stomp_body    = hash[:stompBody]
+
+      fill_from_message if @stomp_headers || @stomp_body
+
+      @verb          ||= hash[:verb]
+      @params        ||= hash[:params]
+      @desc          ||= hash[:desc]
+      @reply_to      ||= hash[:replyTo]
+      @reply_id      ||= hash[:replyId]
+      @in_reply_to   ||= hash[:inReplyTo]
+      @content_type  ||= hash[:contentType]
     end
 
 
+    ##
+    # Return The Protocol of the message as a hash.
+    #
     def protocol_hash
       h = {verb: @verb}
       h[:parameters]  = @params unless @params.nil?
@@ -252,6 +259,29 @@ module Nebulous
       h
     end
 
+
+    ##
+    # Fill all the other attributes, if you can, from @stomp_headers and
+    # @stomp_body.
+    #
+    def fill_from_message
+      @content_type = @stomp_headers['content-type']
+      @reply_id     = @stomp_headers['neb-reply-id']
+      @reply_to     = @stomp_headers['neb-reply-to'] 
+      @in_reply_to  = @stomp_headers['neb-in-reply-to']
+
+      h = StompHandler.body_to_hash(@stomp_headers, @stomp_body)
+
+      @verb   = h["verb"]
+      @params = h["parameters"] || h["params"]
+      @desc   = h["description"] || h["desc"]
+
+      # Assume that if verb is missing, the other two are just part of a
+      # response which has nothing to do with the protocol
+      @params = @desc = nil unless @verb
+
+      self
+    end
 
   end
   ##
