@@ -19,20 +19,8 @@ module Nebulous
   class NebResponse < Message
 
 
-    ##
-    # Return the message headers from the stomp message
-    #
-    def headers
-      @stomp_message ? @stomp_headers : nil
-    end
-
-
-    ##
-    # Return the message body from the stomp message
-    #
-    def body
-      @stomp_message ? @stomp_body : nil
-    end
+    alias :headers :stomp_headers
+    alias :body    :stomp_body
 
 
     ##
@@ -43,7 +31,7 @@ module Nebulous
     # If body is nil, or is not JSON, then return nil; don't raise an exception
     #
     def body_to_h
-      x = StompHandler.body_to_h(headers, body) 
+      x = StompHandler.body_to_hash(headers, body, @content_type) 
       x == {} ? nil : x
     end
 

@@ -81,28 +81,33 @@ module Nebulous
         Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
 
         obj = self.new( stompHeaders: stompMsg.headers,
-                        stompBody:    stompMsg.body )
+                        stompBody:    stompMsg.body     )
 
-        #obj.fill_from_message bamf
       end
-
 
 
       ##
       # To build a Nebmessage from a record in the Redis cache
       # 
       def from_cache(json)
-        raise ArgumentError, "That can''t be JSON, it''s not a string" \
+        raise ArgumentError, "That can't be JSON, it's not a string" \
           unless json.kind_of? String
 
         Nebulous.logger.debug(__FILE__){ "New message from cache" }
 
+        # Note that the message body at this point, for a JSON message, is
+        # actually encoded to JSON *twice* - the second time was when the cache
+        # hash as a whole was encoded for store in Redis. the JSON gem copes
+        # with this so long as the whole string is not double-encoded.
         hash = JSON.parse(json, :symbolize_names => true)
         raise ArgumentError, 'Empty cache entry' if hash == {}
 
+        # So now if the content type is JSON then the body is still JSON now.
+        # It's only the rest of the cache hash that is a now a hash. Confused?
+        # Now join us for this weeks' episode...
         self.new( hash )
 
-      rescue => err
+      rescue JSON::ParserError => err  
         raise ArgumentError, "Bad JSON: #{err.message}"
       end
 
@@ -236,15 +241,15 @@ module Nebulous
       @stomp_headers = hash[:stompHeaders]
       @stomp_body    = hash[:stompBody]
 
-      fill_from_message if @stomp_headers || @stomp_body
+      @verb         = hash[:verb]
+      @params       = hash[:params]
+      @desc         = hash[:desc]
+      @reply_to     = hash[:replyTo]
+      @reply_id     = hash[:replyId]
+      @in_reply_to  = hash[:inReplyTo]
+      @content_type = hash[:contentType]
 
-      @verb          ||= hash[:verb]
-      @params        ||= hash[:params]
-      @desc          ||= hash[:desc]
-      @reply_to      ||= hash[:replyTo]
-      @reply_id      ||= hash[:replyId]
-      @in_reply_to   ||= hash[:inReplyTo]
-      @content_type  ||= hash[:contentType]
+      fill_from_message
     end
 
 
@@ -265,20 +270,33 @@ module Nebulous
     # @stomp_body.
     #
     def fill_from_message
-      @content_type = @stomp_headers['content-type']
-      @reply_id     = @stomp_headers['neb-reply-id']
-      @reply_to     = @stomp_headers['neb-reply-to'] 
-      @in_reply_to  = @stomp_headers['neb-in-reply-to']
 
-      h = StompHandler.body_to_hash(@stomp_headers, @stomp_body)
+      if @stomp_headers
+        @content_type ||= @stomp_headers['content-type']
+        @reply_id     ||= @stomp_headers['neb-reply-id']
+        @reply_to     ||= @stomp_headers['neb-reply-to'] 
+        @in_reply_to  ||= @stomp_headers['neb-in-reply-to']
+      end
 
-      @verb   = h["verb"]
-      @params = h["parameters"] || h["params"]
-      @desc   = h["description"] || h["desc"]
+      # decode the body, which should either be a JSON string or a series of
+      # text fields. And use the body to set Protocol attributes.
+      if @stomp_body && !@stomp_body.empty?
 
-      # Assume that if verb is missing, the other two are just part of a
-      # response which has nothing to do with the protocol
-      @params = @desc = nil unless @verb
+        raise "body is not a string, something is very wrong here!" \
+          unless @stomp_body.kind_of? String
+
+        h = StompHandler.body_to_hash( @stomp_headers,
+                                       @stomp_body,
+                                       @content_type )
+
+        @verb   ||= h["verb"]
+        @params ||= h["parameters"]  || h["params"]
+        @desc   ||= h["description"] || h["desc"]
+
+        # Assume that if verb is missing, the other two are just part of a
+        # response which has nothing to do with the protocol
+        @params = @desc = nil unless @verb
+      end
 
       self
     end

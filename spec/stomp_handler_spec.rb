@@ -96,6 +96,17 @@ describe StompHandler do
 
     end
 
+    it "allows the caller to override the content type" do
+      result = {'one' => 'two', 'three' => '4'}
+      body = result.map{|k,v| "#{k}:#{v}" }.join("\n")
+      msg = stomp_message('application/json', body )
+
+      expect( StompHandler.body_to_hash( msg.headers, 
+                                         msg.body, 
+                                         'application/text') ).to eq result
+
+    end
+
     it "returns a hash or an array of hashes" do
       # lets check some corner cases to ensure this
       msg = stomp_message('appplication/json', ''.to_json)

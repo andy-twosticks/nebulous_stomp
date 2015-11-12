@@ -1,15 +1,23 @@
 require 'spec_helper'
+require 'helpers'
 require 'nebulous/nebresponse'
 
+require 'pry' #bamf
+
 include Nebulous
+
+
+RSpec.configure do |c|
+  c.include Helpers
+end
 
 
 describe NebResponse do
 
   before do
-    @datH = { "verb"        =>  " plink",
-              "parameters"  =>  ["one", "two"],
-              "description" => "test " }
+    @datH = { "verb"   =>  " plink",
+              "params" =>  ["one", "two"],
+              "desc"   => "test " }
 
     @datS = @datH.reduce([]) {|m,(k,v)| m << "#{k}:#{v}" }.join("\n")
   end
@@ -20,16 +28,18 @@ describe NebResponse do
     context "when it is passed a JSON string" do
       it "works" do
 
-        x = @datH.merge( {"headers" => "headers", "body" => "body"} )
+        x = @datH.merge( { "stompHeaders" => {headers: true}, 
+                           "stompBody"    => "body" } )
 
         expect{ NebResponse.from_cache(x.to_json) }.not_to raise_exception
 
-        y = NebResponse.new(x.to_json)
-        expect( y.headers     ).to eq x["headers"]
-        expect( y.body        ).to eq x["body"]
+        y = NebResponse.from_cache(x.to_json)
+
+        expect( y.headers     ).to eq x["stompHeaders"]
+        expect( y.body        ).to eq x["stompBody"]
         expect( y.verb        ).to eq x["verb"]
-        expect( y.parameters  ).to eq x["parameters"]
-        expect( y.description ).to eq x["description"]
+        expect( y.parameters  ).to eq x["params"]
+        expect( y.description ).to eq x["desc"]
 
       end
     end
@@ -40,40 +50,38 @@ describe NebResponse do
       end
 
       it "works with a JSON body" do
-        @mess.headers = {"content-type" => "JSON"}
-        @mess.body    = @datH.to_json
+        mess = stomp_message('JSON', @datH.to_json)
 
-        expect{ NebResponse.from_stomp(@mess) }.not_to raise_exception
+        expect{ NebResponse.from_stomp(mess) }.not_to raise_exception
 
-        z = NebResponse.new(@mess)
-        expect( z.headers     ).to eq @mess.headers
-        expect( z.body        ).to eq @mess.body
+        z = NebResponse.from_stomp(mess)
+        expect( z.headers     ).to eq mess.headers
+        expect( z.body        ).to eq mess.body
         expect( z.verb        ).to eq @datH["verb"]
-        expect( z.parameters  ).to eq @datH["parameters"]
-        expect( z.description ).to eq @datH["description"]
+        expect( z.parameters  ).to eq @datH["params"]
+        expect( z.description ).to eq @datH["desc"]
       end
 
       it "works with a text body" do
-        @mess.headers = {"content-type" => 'text'}
-        @mess.body    = @datS
+        mess = stomp_message('text', @datS)
 
-        expect{ NebResponse.new(@mess) }.not_to raise_exception
+        expect{ NebResponse.from_stomp(mess) }.not_to raise_exception
 
-        z = NebResponse.new(@mess)
-        expect( z.headers     ).to eq @mess.headers
-        expect( z.body        ).to eq @mess.body
+        z = NebResponse.from_stomp(mess)
+        expect( z.headers     ).to eq mess.headers
+        expect( z.body        ).to eq mess.body
         expect( z.verb        ).to eq @datH["verb"].strip
-        expect( z.parameters  ).to eq @datH["parameters"].to_s.strip
-        expect( z.description ).to eq @datH["description"].strip
+        expect( z.parameters  ).to eq @datH["params"].to_s.strip
+        expect( z.description ).to eq @datH["desc"].strip
       end
 
       it "doesn't set @description etc unles it finds a verb" do
-        @mess.headers = {"content-type" => 'text'}
-        @mess.body    = "parameters:one\ndescription:two"
+        mess = stomp_message( 'text',
+                              "parameters:one\ndescription:two" )
 
-        expect{ NebResponse.new(@mess) }.not_to raise_exception
+        expect{ NebResponse.from_stomp(mess) }.not_to raise_exception
 
-        z = NebResponse.new(@mess)
+        z = NebResponse.from_stomp(mess)
         expect( z.verb        ).to eq nil
         expect( z.parameters  ).to eq nil
         expect( z.description ).to eq nil
@@ -83,21 +91,23 @@ describe NebResponse do
 
 
   end # of #initialize
+  ##
 
 
   describe "#body_to_h" do
 
     context "if the body is in JSON" do
-      it "returns a hash" do
 
+      it "returns a hash"  do
         x = {}
-        x["body"] = @datH.to_json
-        x["content-type"] = "JSON"
+        x[:stompHeaders] = {}
+        x[:stompBody]    = @datH.to_json # JSONd twice? 
+        x[:contentType]  = "JSON"
 
-        nr = NebResponse.new(x.to_json)
+        nr = NebResponse.from_cache(x.to_json)
         expect( nr.body_to_h ).to eq @datH
-
       end
+
     end
 
     context "If the body is not in JSON" do
@@ -107,7 +117,7 @@ describe NebResponse do
         x["body"] = @datS
         x["content-type"] = "text"
 
-        nr = NebResponse.new(x.to_json)
+        nr = NebResponse.from_cache(x.to_json)
         expect( nr.body_to_h ).to be_nil
 
       end
@@ -119,7 +129,7 @@ describe NebResponse do
         x["body"] = nil
         x["content-type"] = "JSON"
 
-        nr = NebResponse.new(x.to_json)
+        nr = NebResponse.from_cache(x.to_json)
 
         expect{ nr.body_to_h }.to_not raise_exception
         expect( nr.body_to_h ).to be_nil
@@ -135,10 +145,10 @@ describe NebResponse do
     it "returns a JSON view of the response" do
 
       x = @datH
-      x["body"] = @datH.to_json
-      x["headers"] = "content-type:JSON"
+      x["stompBody"]    = @datH.to_json
+      x["stompHeaders"] = "content-type:JSON"
 
-      nr = NebResponse.new(x.to_json)
+      nr = NebResponse.from_cache(x.to_json)
       ans = JSON.parse(nr.to_cache)
 
       expect( ans ).to include(x)

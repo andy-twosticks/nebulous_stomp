@@ -5,6 +5,8 @@ require 'nebulous/message'
 
 require_relative 'helpers'
 
+require 'pry'
+
 include Nebulous
 
 
@@ -163,6 +165,16 @@ describe Message do
       expect{ Message.from_cache({foo:'bar'}) }.to raise_exception ArgumentError
 
       expect{ Message.from_cache(json_hash.to_json) }.not_to raise_exception
+    end
+
+    it "copes with some loon passing header and not body or vice versa" do
+      # I know because ... I was that soldier.
+      
+      loony1 = { stompHeader: 'foo' }
+      loony2 = { stompBody:   'bar' }
+
+      expect{ Message.from_cache(loony1.to_json) }.not_to raise_exception
+      expect{ Message.from_cache(loony2.to_json) }.not_to raise_exception
     end
 
     it 'returns a Message object' do
