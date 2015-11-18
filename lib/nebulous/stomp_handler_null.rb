@@ -5,6 +5,7 @@ require 'json'
 require 'time'
 
 require_relative 'stomp_handler'
+require_relative 'message'
 
 
 module Nebulous
@@ -17,19 +18,31 @@ module Nebulous
   class StompHandlerNull < StompHandler
 
 
-    def initialize(hash)
-      super
-      @fakeMess = MessageNull.from_cache('{}')
+    def initialize(hash=nil)
+      super(hash)
+
+      @fakeMess = 
+        Nebulous::Message.from_cache( { stompHeaders: {},
+                                        stompBody:    '',
+                                        verb:         '',
+                                        params:       '',
+                                        desc:         '',
+                                        replyTo:      nil,
+                                        replyId:      nil,
+                                        inReplyTo:    nil,
+                                        contentType:  nil }.to_json )
+
+
     end
 
 
     def insert_fake(verb, params, desc)
-      @fakeMess = MessageNull.from_parts( nil, nil, verb, params, desc )
+      @fakeMess = Message.from_parts( nil, nil, verb, params, desc )
     end
 
 
     def stomp_connect
-      $logger.info(__FILE__) {"Connecting to STOMP (Null)"} 
+      Nebulous.logger.info(__FILE__) {"Connecting to STOMP (Null)"} 
 
       @client = true
       self
@@ -37,14 +50,17 @@ module Nebulous
 
 
     def stomp_disconnect
-      $logger.info(__FILE__) {"STOMP Disconnect (Null)"}
+      Nebulous.logger.info(__FILE__) {"STOMP Disconnect (Null)"}
       @client = nil
       self
     end
 
+    
+    def connected?; true; end
+
 
     def listen(queue, timeout = nil)
-      $logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+      Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
       yield @fakeMess
     end
 
@@ -52,23 +68,25 @@ module Nebulous
 
 
     def send_message(queue, nebMess)
-      self
+      nebMess
     end
 
 
     def respond_success(nebMess)
-      $logger.info(__FILE__) do 
+      Nebulous.logger.info(__FILE__) do 
         "Responded to #{nebMess} with 'success' verb (to Null)"
       end
     end
 
 
     def respond_error(nebMess,err,fields=[])
-      $logger.info(__FILE__) do
+      Nebulous.logger.info(__FILE__) do
         "Responded to #{nebMess} with 'error' verb: #{err} (to Null)"
       end
     end
 
+
+    def calc_reply_id; 'ABCD123456789'; end
 
 
   end

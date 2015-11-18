@@ -3,6 +3,9 @@ require 'spec_helper'
 include Nebulous
 
 require 'nebulous/nebrequest'
+require 'nebulous/stomp_handler_null'
+
+require 'pry' 
 
 
 describe NebRequest do
@@ -18,6 +21,10 @@ describe NebRequest do
     @redish = { host: '127.0.0.1',
                 port: 6379,
                 db:   0 }
+
+    @client = StompHandlerNull.new
+    @client.insert_fake('foo', 'bar', 'baz')
+
 
     # The message that "stomp" returns to Nebulous. This has to be a real
     # Stomp::Message because (we assume) NebResponse uses class to tell what is
@@ -41,10 +48,12 @@ describe NebRequest do
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
 
+=begin
     # Wipe the whole darned Redis cache before every test.
     r = RedisHandler.connect
     r.flushall
     r.quit
+=end
   end
 
 
@@ -57,7 +66,7 @@ describe NebRequest do
     end
 
     it "takes the timeout on the target over the default" do
-      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(1)
+      expect( NebRequest.new('accord', 'foo', @client ).mTimeout ).to eq(1)
     end
 
     it "falls back to the default if the timeout on the target is not set" do
@@ -70,7 +79,7 @@ describe NebRequest do
                            :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
-      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(5)
+      expect( NebRequest.new('accord', 'foo' ).mTimeout ).to eq(5)
     end
       
 
@@ -87,7 +96,7 @@ describe NebRequest do
     describe "#send_no_cache" do
 
       it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo').send_no_cache }.to \
+        expect{ NebRequest.new('dummy', 'foo', nil, nil, @client).send_no_cache }.to \
             raise_exception(NebulousTimeout)
 
       end
@@ -96,7 +105,7 @@ describe NebRequest do
     describe "#send" do
 
       it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo').send }.to \
+        expect{ NebRequest.new('dummy', 'foo', nil, nil, @client ).send }.to \
             raise_exception(NebulousTimeout)
 
       end
@@ -106,38 +115,20 @@ describe NebRequest do
 
 
   context "if Nebulous gets a response" do
-    before do
-      # mock the whole STOMP process ... eek...
-      @client = instance_double( Stomp::Client, 
-                                 :close   => nil,
-                                 :publish => nil,
-                                 :'open?' => true )
-
-      # We assume Nebulous wants session ID to make the replyID somehow
-      # ...it doesn't have to; we don't enforce that.
-      allow(@client).to receive_message_chain("connection_frame.headers").
-          and_return({"session" => "123"})
-
-    end
-
 
     describe "#send_no_cache" do
 
       it "returns a NebResponse object" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
-
         response = request.send_no_cache
+
         expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
+        expect( response.body ).to eq('foo')
       end
 
       # I have no idea how to actual check that it *honours* the timeout...
       it "allows you to specify a message timeout" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        allow(@client).to receive(:subscribe).and_yield(msg)
 
         expect{ response = request.send_no_cache(3) }.not_to raise_exception
       end

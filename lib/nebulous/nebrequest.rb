@@ -109,10 +109,11 @@ module Nebulous
     def send_no_cache(mTimeout=@mTimeout)
 
       # If we've lost the connection then reconnect but *keep replyID*
-      @stomp_handler.stomp_connect unless @stomp_handler.client.open?
+      @stomp_handler.stomp_connect unless @stomp_handler.connected?
       @replyID = @stomp_handler.calc_reply_id if @replyID.nil? 
 
       response = neb_qna(mTimeout)
+      binding.pry #bamf
       NebResponse.from_stomp(response)
 
     ensure
@@ -206,7 +207,9 @@ module Nebulous
     # Called automatically by initialize, so probably useless to and end-user.
     #
     def neb_connect
+      puts "stomp handler is nil" unless @stomp_handler #bamf
       @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
+
       @stomp_handler.stomp_connect
       @replyID = @stomp_handler.calc_reply_id
       self

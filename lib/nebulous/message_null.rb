@@ -28,12 +28,6 @@ module Nebulous
 
     end
 
-
-    def fill_from_message
-      super(StompHandlerNull)
-    end
-
-
   end
   ##
 
