@@ -16,7 +16,7 @@ require 'nebulous/param'
 # protocol, with an optional timeout, and get a response.
 #
 # Use Nebulous::init and Nebulous::add_target to set it up; then create a
-# Nebulous::Nebrequest, which will return a Nebulous::Nebresponse.
+# Nebulous::Nebrequest, which will return a Nebulous::Message.
 #
 # Since you are setting the Redis connection details as part of initialisation,
 # you can also use it to connect to Redis, if you want. See

@@ -4,7 +4,6 @@ require 'nebulous'
 
 require_relative 'stomp_handler'
 require_relative 'redis_handler'
-require_relative 'nebresponse'
 require_relative 'message'
 
 
@@ -12,7 +11,7 @@ module Nebulous
 
 
   ##
-  # Class to handle requests and return a NebResponse
+  # Class to handle requests and return a Message
   #
   class NebRequest
 
@@ -93,8 +92,8 @@ module Nebulous
 
     ##
     # :call-seq:
-    #   request.send_no_cache           -> (NebResponse)
-    #   request.send_no_cache(mTimeout) -> (NebResponse)
+    #   request.send_no_cache           -> (Message)
+    #   request.send_no_cache(mTimeout) -> (Message)
     #
     # Send a request and return the response, without using the cache.
     #
@@ -112,9 +111,7 @@ module Nebulous
       @stomp_handler.stomp_connect unless @stomp_handler.connected?
       @replyID = @stomp_handler.calc_reply_id if @replyID.nil? 
 
-      response = neb_qna(mTimeout)
-      binding.pry #bamf
-      NebResponse.from_stomp(response)
+      neb_qna(mTimeout)
 
     ensure
       @stomp_handler.stomp_disconnect
@@ -123,9 +120,9 @@ module Nebulous
 
     ##
     # ::call-seq::
-    #   request.send                    -> (NebResponse)
-    #   request.send(mTimeout)          -> (NebResponse)
-    #   request.send(mTimeout,cTimeout) -> (NebResponse)
+    #   request.send                    -> (Message)
+    #   request.send(mTimeout)          -> (Message)
+    #   request.send(mTimeout,cTimeout) -> (Message)
     #
     # As send_nocache, but without not checking the cache :)
     #
@@ -145,7 +142,7 @@ module Nebulous
       redis = RedisHandler::connect 
 
       found = redis.get(@message.protocol_json)
-      return NebResponse.from_cache(found) unless found.nil?
+      return Message.from_cache(found) unless found.nil?
 
       # No answer in Redis -- ask Nebulous
       nebMess = send_no_cache(mTimeout)

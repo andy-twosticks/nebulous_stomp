@@ -12,6 +12,12 @@ module Nebulous
   # A class to encapsulate a Nebulous message (which is built on top of a
   # STOMP message)
   #
+  # Note that this class REPLACES the old NebResponse class. There are
+  # differences:
+  #     * response.body -> message.stomp_body
+  #     * response.headers -> message.stomp_headers
+  #     * to_cache now returns a Hash, not a JSON string
+  #
   class Message
 
     # Might be nil: parsed from incoming messages; set by StompHandler on send
@@ -175,6 +181,19 @@ module Nebulous
       else
         hash.map {|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
       end
+    end
+
+
+    ##
+    # :call-seq:
+    #   message.body_to_h -> (Hash || nil)
+    #
+    # If the body is in JSON, return a hash.
+    # If body is nil, or is not JSON, then return nil; don't raise an exception
+    #
+    def body_to_h
+      x = StompHandler.body_to_hash(stomp_headers, stomp_body, @content_type)
+      x == {} ? nil : x
     end
 
 

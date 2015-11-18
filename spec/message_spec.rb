@@ -109,6 +109,7 @@ describe Message do
   ##
 
 
+  # BAMF
   describe 'Message.from_stomp' do
 
     it 'requires a Stomp::Message' do
@@ -117,8 +118,47 @@ describe Message do
       expect{ Message.from_stomp(smess) }.not_to raise_exception
     end
 
-    it 'returns a Message object' do
-      expect( msg_stomp ).to be_a_kind_of Message
+    context "when the message body is text" do
+
+      it 'returns a Message object' do
+        expect( msg_stomp ).to be_a_kind_of Message
+      end
+
+      it 'sets Protocol attributes if it can' do
+        body = {verb: 'Dougal', params: 'Florence', desc: 'Ermintrude'}
+        mess = stomp_message('application/json', body.to_json, '23')
+        msg  = Message.from_stomp(mess)
+        expect( msg.verb        ).to eq 'Dougal'
+        expect( msg.params      ).to eq 'Florence'
+        expect( msg.desc        ).to eq 'Ermintrude'
+        expect( msg.in_reply_to ).to eq '23'
+      end
+
+    end
+
+    context "when the message body is JSON" do
+      
+      let(:msg_stomp_json) do
+        m = {verb: 'one', params: 'two, desc: 'three'}.to_json
+        x = stomp_message('application/json', m)
+        message_from_stomp(x)
+      end
+
+      it 'returns a Message object' do
+        expect( msg_stomp_json ).to be_a_kind_of Message
+      end
+
+      it 'sets Protocol attributes if it can' do
+        body = {verb: 'Dougal', params: 'Florence', desc: 'Ermintrude'}
+        mess = stomp_message('application/json', body.to_json, '23')
+        msg  = Message.from_stomp(mess)
+        expect( msg.verb        ).to eq 'Dougal'
+        expect( msg.params      ).to eq 'Florence'
+        expect( msg.desc        ).to eq 'Ermintrude'
+        expect( msg.in_reply_to ).to eq '23'
+      end
+
+
     end
 
     it 'sets stomp attributes' do
@@ -134,15 +174,6 @@ describe Message do
       expect( msg_stomp.in_reply_to ).to eq nil
     end
 
-    it 'sets Protocol attributes if it can' do
-      body = {verb: 'Dougal', params: 'Florence', desc: 'Ermintrude'}
-      mess = stomp_message('application/json', body.to_json, '23')
-      msg  = Message.from_stomp(mess)
-      expect( msg.verb        ).to eq 'Dougal'
-      expect( msg.params      ).to eq 'Florence'
-      expect( msg.desc        ).to eq 'Ermintrude'
-      expect( msg.in_reply_to ).to eq '23'
-    end
 
   end
   ##
@@ -293,6 +324,52 @@ describe Message do
                      or include(description: 'Scooby')
 
     end
+  end
+  ##
+
+
+  describe "#body_to_h" do
+
+    context "if the body is in JSON" do
+
+      it "returns a hash"  do
+        x = {}
+        x[:stompHeaders] = {}
+        x[:stompBody]    = @datH.to_json # JSONd twice?
+        x[:contentType]  = "JSON"
+
+        nr = Message.from_cache(x.to_json)
+        expect( nr.body_to_h ).to eq @datH
+      end
+
+    end
+
+    context "If the body is not in JSON" do
+      it "returns nil" do
+
+        x = {}
+        x["body"] = @datS
+        x["content-type"] = "text"
+
+        nr = Message.from_cache(x.to_json)
+        expect( nr.body_to_h ).to be_nil
+
+      end
+    end
+
+    context "If the body is nil(!)" do
+      it "returns nil" do
+        x = {}
+        x["body"] = nil
+        x["content-type"] = "JSON"
+
+        nr = Message.from_cache(x.to_json)
+
+        expect{ nr.body_to_h }.to_not raise_exception
+        expect( nr.body_to_h ).to be_nil
+      end
+    end
+
   end
   ##
 
