@@ -3,13 +3,56 @@ require 'spec_helper'
 include Nebulous
 
 require 'nebulous/nebrequest'
+require 'nebulous/message'
 require 'nebulous/stomp_handler_null'
+require 'nebulous/redis_handler_null'
 
 require 'pry' 
 
 
 describe NebRequest do
 
+  let(:stomp_hash) do
+    { hosts: [{ login:    'guest',
+                passcode: 'guest',
+                host:     '10.0.0.150',
+                port:     61613,
+                ssl:      false }],
+      reliable: false }
+
+  end
+
+  let(:redis_hash) { {host: '127.0.0.1', port: 6379, db: 0} }
+
+  let(:stomp_h) { StompHandlerNull.new }
+  let(:redis_h) { RedisHandlerNull.new }
+
+=begin
+  let(:msg1) do 
+    Nebulous::Message.from_parts('/queue/1', nil, 'foo', 'bar', 'baz')
+  end
+=end
+
+  def new_request(target, verb, params=nil, desc=nil)
+    NebRequest.new(target, verb, params, desc, stomp_h, redis_h)
+  end
+
+  before do
+    Nebulous.init( :stompConnectHash => @stomph, 
+                   :redisConnectHash => @redish,
+                   :messageTimeout   => 5,
+                   :cacheTimeout     => 20 )
+
+    Nebulous.add_target( :accord, 
+                         :sendQueue      => "/queue/laplace.dev",
+                         :receiveQueue   => "/queue/laplace.out",
+                         :messageTimeout => 1 )
+
+  end
+
+
+
+=begin
   before do
     @stomph = { hosts: [{ login:    'guest',
                          passcode: 'guest',
@@ -38,6 +81,7 @@ describe NebRequest do
              '',
              'Foo' ].join("\n") + "\0"
 
+
     Nebulous.init( :stompConnectHash => @stomph, 
                    :redisConnectHash => @redish,
                    :messageTimeout   => 5,
@@ -48,30 +92,29 @@ describe NebRequest do
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
 
-=begin
     # Wipe the whole darned Redis cache before every test.
     r = RedisHandler.connect
     r.flushall
     r.quit
-=end
   end
+=end
 
 
   describe "#initialize" do
 
     it "raises an exception for a bad target" do
-      expect{ NebRequest.new('badtarget', 'foo') }.to \
-          raise_exception(NebulousError)
+      expect{ new_request('badtarget', 'foo') }.
+        to raise_exception(NebulousError)
 
     end
 
     it "takes the timeout on the target over the default" do
-      expect( NebRequest.new('accord', 'foo', @client ).mTimeout ).to eq(1)
+      expect( new_request('accord', 'foo').mTimeout ).to eq(1)
     end
 
     it "falls back to the default if the timeout on the target is not set" do
-      Nebulous.init( :stompConnectHash => @stomph, 
-                     :redisConnectHash => @redish,
+      Nebulous.init( :stompConnectHash => stomp_hash, 
+                     :redisConnectHash => redis_hash,
                      :messageTimeout   => 5,
                      :cacheTimeout     => 20 )
 
@@ -79,7 +122,7 @@ describe NebRequest do
                            :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
-      expect( NebRequest.new('accord', 'foo' ).mTimeout ).to eq(5)
+      expect( new_request('accord', 'foo').mTimeout ).to eq(5)
     end
       
 
@@ -101,8 +144,9 @@ describe NebRequest do
 
     describe "#send_no_cache" do
 
-      it "returns a Message object" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+      it "returns something from STOMP" do
+        stomp_h.insert_fake('foo', 'bar', 'baz')
+        request = new_request('accord', 'foo')
         response = request.send_no_cache
 
         expect( response ).to be_a Nebulous::Message
@@ -114,7 +158,8 @@ describe NebRequest do
 
     describe "#send" do
       it "returns a Message object from STOMP the first time" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+        stomp_h.insert_fake('foo', 'bar', 'baz')
+        request = new_request('accord', 'foo')
 
         response = request.send
         expect( response ).to be_a Nebulous::Message
@@ -122,36 +167,26 @@ describe NebRequest do
       end
 
       it "returns the answer from the cache the second time" do
-       
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        response = request.send
-        expect( response ).to be_a Nebulous::Message
-        expect( response.verb ).to eq('foo')
-
+        stomp_h.insert_fake('foo', 'bar', 'baz')
+        redis_h.insert_fake('frog', 'star')
 
         # First time
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
-
+        request = new_request('accord', 'foo')
         response = request.send
 
-
-        # Second time
-        # Note, we actually need the Redis server to be up for this test to
-        # work!
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        expect(@client).not_to receive(:subscribe)
-
-        response = request.send
         expect( response ).to be_a Nebulous::Message
         expect( response.verb ).to eq('foo')
+
+        # Second time
+        request = new_request('accord', 'foo')
+        response = request.send
+
+        expect( response ).to be_a Nebulous::Message
+        expect( response.verb ).to eq('frog')
       end
 
       it "allows you to specify a message timeout & cache timeout" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+        request = new_request('accord', 'foo')
         msg = Stomp::Message.new( @msg % request.replyID )
         allow(@client).to receive(:subscribe).and_yield(msg)
 
@@ -165,13 +200,12 @@ describe NebRequest do
     describe "#get_from_cache" do
 
       it "returns nil if there is no cached value" do
-        req = NebRequest.new('accord', 'foo', nil, nil, @client)
-        
+        req = new_request('accord', 'foo')
         expect( req.get_from_cache ).to eq nil
       end
 
       it "returns the cached value if there is one" do
-        req = NebRequest.new('accord', 'foo', nil, nil, @client)
+        req = new_request('accord', 'foo')
         msg = Stomp::Message.new( @msg % req.replyID )
         allow(@client).to receive(:subscribe).and_yield(msg)
 
@@ -189,7 +223,7 @@ describe NebRequest do
         @req = []
 
         2.times do
-          r = NebRequest.new('accord', msg.shift, nil, nil, @client)
+          r = new_request('accord', msg.shift)
           m = Stomp::Message.new( @msg % r.replyID )
           allow(@client).to receive(:subscribe).and_yield(m)
           r.send
