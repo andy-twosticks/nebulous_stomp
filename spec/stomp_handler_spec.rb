@@ -36,7 +36,9 @@ describe StompHandler do
     # This does the opposite of making me happy -- it's hella fragile, and
     # we're dealing with implementation details, in code we don't even
     # maintain! 
-    # But. I don't know of another way to do this.
+    # But. I don't know of another way to do this. And we only do it here, in
+    # the test for StompHandler. Everything else can mock StompHandler or use
+    # StompHandlerNull.
     conn = double("connection frame").as_null_object
 
     allow(client).to receive(:connection_frame).and_return(conn)
@@ -147,7 +149,7 @@ describe StompHandler do
 
       expect(stop - start).to be < 0.5
     end
-      
+
   end
   ##
 
@@ -334,8 +336,11 @@ describe StompHandler do
 
     it "tries to reconnect if the client is not connected" do
       handler.stomp_disconnect
+
       expect(client).to receive(:publish)
-      expect{ handler.listen_with_timeout('foo', 1) }.not_to raise_exception
+      expect{ handler.listen_with_timeout('foo', 1) }.
+        to raise_exception NebulousTimeout #as opposed to something nastier
+
     end
 
     it "yields a Message if it gets a response on the given queue" do
@@ -366,11 +371,16 @@ describe StompHandler do
 
     it "stops after a timeout" do
       start = Time.now
-      run_listen_with_timeout(2)
+      run_listen_with_timeout(2) rescue nil #probably raises NebulousTimeout
       stop = Time.now
 
       expect(stop - start).to be_within(0.5).of(2)
     end
+
+    it "raises NebulousError after a timeout" do
+      expect{ run_listen_with_timeout(1) }.to raise_exception NebulousTimeout
+    end
+
 
   end
   ##

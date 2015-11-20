@@ -8,6 +8,9 @@ require 'time'
 module Nebulous
 
 
+  ##
+  # A Class to deal with talking to STOMP via the Stomp gem
+  #
   class StompHandler
 
     attr_reader :client
@@ -210,6 +213,8 @@ module Nebulous
 
       @client.publish( queue, "boo" )
 
+      done = nil  #bamf
+
       StompHandler.with_timeout(timeout) do |resource|
         done = false
 
@@ -228,10 +233,11 @@ module Nebulous
 
         end
 
-        # Not that this seems to do any good when the Stomp gem is in play, but:
-        resource.signal if done 
+        # Not that this seems to do any good when the Stomp gem is in play, but.
+        resource.signal if done
       end 
 
+      raise NebulousTimeout unless done
     end
 
 

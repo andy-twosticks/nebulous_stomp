@@ -28,9 +28,6 @@ module Nebulous
     # The 'description' part of the message
     attr_reader :desc
     
-    # The STOMP client instance (dependancy injection for testing)
-    attr_reader :client
-
     # The 'replyID' header to use in this message 
     attr_reader :replyID
 
@@ -66,7 +63,13 @@ module Nebulous
     #  desc   [String] the 'description' part of the message
     #  stompHandler    ONLY FOR TESTING
     #
-    def initialize(target, verb, params=nil, desc=nil, stompHandler=nil)
+    def initialize( target, 
+                    verb, 
+                    params=nil, 
+                    desc=nil, 
+                    stompHandler=nil, 
+                    redisHandler=nil )
+
       Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
       # The target name -- should point to data in the parameter hash
@@ -83,6 +86,7 @@ module Nebulous
       @message   = Message.from_parts(@responseQ, nil, verb, params, desc)
       @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
       @stomp_handler = stompHandler 
+      @redis_handler = redisHandler 
       @replyID       = nil
 
       # Now we connect and set @replyID 
@@ -114,7 +118,7 @@ module Nebulous
       neb_qna(mTimeout)
 
     ensure
-      @stomp_handler.stomp_disconnect
+      @stomp_handler.stomp_disconnect if @stomp_handler
     end
 
 
@@ -138,20 +142,19 @@ module Nebulous
     def send(mTimeout=@mTimeout, cTimeout=@cTimeout)
       return send_no_cache(mTimeout) unless redis_on?
 
-      redis = nil
-      redis = RedisHandler::connect 
+      @redis_handler.connect unless @redis_handler.connected?
 
-      found = redis.get(@message.protocol_json)
+      found = @redis_handler.get(@message.protocol_json)
       return Message.from_cache(found) unless found.nil?
 
       # No answer in Redis -- ask Nebulous
       nebMess = send_no_cache(mTimeout)
-      redis.set( @message.protocol_json, nebMess.to_cache, ex: cTimeout ) 
+      @redis_handler.set(@message.protocol_json, nebMess.to_cache, ex: cTimeout)
 
       nebMess
 
     ensure
-      redis.quit unless redis.nil?
+      @redis_handler.quit if @redis_handler
     end
 
 
@@ -167,13 +170,12 @@ module Nebulous
     # other use we might find.
     #
     def get_from_cache
-      redis = nil
-      redis = RedisHandler::connect 
+      @redis_handler.connect unless @redis_handler.connected?
 
-      redis.get(@message.protocol_json)
+      @redis_handler.get(@message.protocol_json)
 
     ensure
-      redis.quit unless redis.nil?
+      @redis_handler.quit if @redis_handler
     end
 
 
@@ -184,15 +186,14 @@ module Nebulous
     # Clear the cache of responses to this request - just this request.
     #
     def clear_cache
-      redis = nil
-      redis = RedisHandler::connect 
+      @redis_handler.connect unless @redis_handler.connected?
 
-      redis.del(@message.protocol_json)
+      @redis_handler.del(@message.protocol_json)
 
       self
 
     ensure
-      redis.quit unless redis.nil?
+      @redis_handler.quit if @redis_handler
     end
 
 
@@ -200,11 +201,11 @@ module Nebulous
     # :call-seq:
     #   request.neb_connect -> self
     #
-    # Connect to STOMP and do initial setup
+    # Connect to STOMP etc and do initial setup
     # Called automatically by initialize, so probably useless to and end-user.
     #
     def neb_connect
-      puts "stomp handler is nil" unless @stomp_handler #bamf
+      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
       @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
 
       @stomp_handler.stomp_connect
@@ -217,7 +218,10 @@ module Nebulous
     # :call-seq:
     #   request.redis_on? -> (boolean)
     #
-    # Return true if Redis is turned on in the config
+    # Return true if Redis is turned on in the *config*
+    #
+    # (If you want to know if we are conected to Redis, try
+    # `@redis_handler.connected?`)
     #
     def redis_on?
       ! Param.get(:redisConnectHash).nil?
@@ -230,6 +234,9 @@ module Nebulous
     ##
     # Send a message via STOMP and wait for a response
     #
+    # Note: this used to return a Stomp::Message, but now it returns a
+    # Nebulous::Message.
+    #
     def neb_qna(mTimeout)
       @stomp_handler.send_message(@requestQ, @message)
 
@@ -238,8 +245,7 @@ module Nebulous
         response = msg
       end
 
-      raise NebulousTimeout unless response
-      response # note, this is a Nebulous::Message
+      response
     end
 
 

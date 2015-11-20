@@ -87,28 +87,11 @@ describe NebRequest do
 
 
   context "if Nebulous gets no response" do
-    before do
-      # here we send an actual STOMP request to a non-existant target
-      Param.add_target(:dummy, :sendQueue => "foo", :receiveQueue => "foo")
+
+    describe "#send_no_cache" do #bamf
     end
 
-
-    describe "#send_no_cache" do
-
-      it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo', nil, nil, @client).send_no_cache }.to \
-            raise_exception(NebulousTimeout)
-
-      end
-    end
-
-    describe "#send" do
-
-      it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo', nil, nil, @client ).send }.to \
-            raise_exception(NebulousTimeout)
-
-      end
+    describe "#send" do #bamf
     end
 
   end
@@ -118,33 +101,24 @@ describe NebRequest do
 
     describe "#send_no_cache" do
 
-      it "returns a NebResponse object" do
+      it "returns a Message object" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
         response = request.send_no_cache
 
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('foo')
-      end
-
-      # I have no idea how to actual check that it *honours* the timeout...
-      it "allows you to specify a message timeout" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        expect{ response = request.send_no_cache(3) }.not_to raise_exception
+        expect( response ).to be_a Nebulous::Message
+        expect( response.verb ).to eq('foo')
       end
 
     end #send_no_cache
 
 
     describe "#send" do
-      it "returns a NebResponse object from STOMP the first time" do
+      it "returns a Message object from STOMP the first time" do
         request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
 
         response = request.send
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
+        expect( response ).to be_a Nebulous::Message
+        expect( response.verb ).to eq('foo')
       end
 
       it "returns the answer from the cache the second time" do
@@ -165,8 +139,8 @@ describe NebRequest do
         expect(@client).not_to receive(:subscribe)
 
         response = request.send
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
+        expect( response ).to be_a Nebulous::Message
+        expect( response.verb ).to eq('foo')
       end
 
       it "allows you to specify a message timeout & cache timeout" do
