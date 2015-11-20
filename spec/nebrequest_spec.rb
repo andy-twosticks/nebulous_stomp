@@ -69,25 +69,34 @@ describe NebRequest do
   ##
 
 
-  context "if Nebulous gets no response" do
+  describe "#clear_cache" do
 
-    describe "#send_no_cache" do
+    it "removes the redis cache for a single request" do
+      redis_h.insert_fake('foo', 'bar')
+      expect( redis_h ).to receive(:del).with( {"verb"=>"foo"}.to_json )
 
-      it 'returns a nebulous timeout' do
-        request = new_request('accord', 'foo')
-        expect{ request.send_no_cache }.
-          to raise_exception Nebulous::NebulousTimeout
-
-      end
-
+      new_request('accord', 'foo').clear_cache
     end
 
-    describe "#send" do
+  end
+  ##
 
-      it 'returns a nebulous timeout' do
-        request = new_request('accord', 'foo')
-        expect{ request.send }.to raise_exception Nebulous::NebulousTimeout
-      end
+
+  describe "#send_no_cache" do
+
+    it "returns something from STOMP" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+      response = request.send_no_cache
+
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('foo')
+    end
+
+    it 'returns a nebulous timeout if there is no response' do
+      request = new_request('accord', 'foo')
+      expect{ request.send_no_cache }.
+        to raise_exception Nebulous::NebulousTimeout
 
     end
 
@@ -95,82 +104,73 @@ describe NebRequest do
   ##
 
 
-  context "if Nebulous gets a response" do
+  describe "#send" do
 
-    describe "#send_no_cache" do
+    it "returns a Message object from STOMP the first time" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
 
-      it "returns something from STOMP" do
-        stomp_h.insert_fake('foo', 'bar', 'baz')
-        request = new_request('accord', 'foo')
-        response = request.send_no_cache
-
-        expect( response ).to be_a Nebulous::Message
-        expect( response.verb ).to eq('foo')
-      end
-
+      response = request.send
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('foo')
     end
-    ##
 
+    it "returns the answer from the cache the second time" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      redis_h.insert_fake('xxx', {'verb' => 'frog'}.to_json)
 
-    describe "#send" do
+      # First time
+      request = new_request('accord', 'foo')
+      response = request.send
 
-      it "returns a Message object from STOMP the first time" do
-        stomp_h.insert_fake('foo', 'bar', 'baz')
-        request = new_request('accord', 'foo')
+      # Second time
+      request = new_request('accord', 'foo')
+      response = request.send
 
-        response = request.send
-        expect( response ).to be_a Nebulous::Message
-        expect( response.verb ).to eq('foo')
-      end
-
-      it "returns the answer from the cache the second time" do
-        stomp_h.insert_fake('foo', 'bar', 'baz')
-        redis_h.insert_fake('xxx', {'verb' => 'frog'}.to_json)
-
-        # First time
-        request = new_request('accord', 'foo')
-        response = request.send
-
-        # Second time
-        request = new_request('accord', 'foo')
-        response = request.send
-
-        expect( response ).to be_a Nebulous::Message
-        expect( response.verb ).to eq('frog')
-      end
-
-      it "allows you to specify a message timeout" do
-        stomp_h.insert_fake('foo', 'bar', 'baz')
-        request = new_request('accord', 'foo')
-
-        expect{ request.send(3) }.not_to raise_exception
-      end
-
-      it "allows you to specify a message timeout & cache timeout" do
-        stomp_h.insert_fake('foo', 'bar', 'baz')
-        request = new_request('accord', 'foo')
-
-        expect{ request.send(3, 120) }.not_to raise_exception
-      end
-
-    end 
-    ##
-
-
-    describe "#clear_cache" do
-
-      it "removes the redis cache for a single request" do
-        redis_h.insert_fake('foo', 'bar')
-        expect( redis_h ).to receive(:del).with( {"verb"=>"foo"}.to_json )
-
-        new_request('accord', 'foo').clear_cache
-      end
-
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('frog')
     end
-    ##
+
+    it "allows you to specify a message timeout" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+
+      expect{ request.send(3) }.not_to raise_exception
+    end
+
+    it "allows you to specify a message timeout & cache timeout" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+
+      expect{ request.send(3, 120) }.not_to raise_exception
+    end
+
+    it 'returns a nebulous timeout if there is no response' do
+      request = new_request('accord', 'foo')
+      expect{ request.send }.to raise_exception Nebulous::NebulousTimeout
+    end
+
+  end 
+  ##
 
 
-  end # context "gets a response"
+  describe '#redis_on?' do
+
+    it 'is true if there is a redis connection hash' do
+      request = new_request('accord', 'foo')
+      expect( request.redis_on? ).to be_truthy
+    end
+
+    it 'is false if there is no redis connection hash' do
+      # make a temporary RedisHandlerNull with no connection hash and use that
+      # to make a request object
+      rh = RedisHandlerNull.new
+      r = NebRequest.new('accord', 'foo', nil, nil, stomp_h, rh)
+
+      expect( r.redis_on? ).to be_falsy
+    end
+
+  end
 
 end # of NebRequest
 

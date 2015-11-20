@@ -179,23 +179,6 @@ module Nebulous
 
     ##
     # :call-seq:
-    #   request.neb_connect -> self
-    #
-    # Connect to STOMP etc and do initial setup
-    # Called automatically by initialize, so probably useless to and end-user.
-    #
-    def neb_connect
-      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
-      @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
-
-      @stomp_handler.stomp_connect
-      @replyID = @stomp_handler.calc_reply_id
-      self
-    end
-
-
-    ##
-    # :call-seq:
     #   request.redis_on? -> (boolean)
     #
     # Return true if Redis is turned on in the *config*
@@ -209,6 +192,23 @@ module Nebulous
 
 
     private
+
+
+    ##
+    # :call-seq:
+    #   request.neb_connect -> self
+    #
+    # Connect to STOMP etc and do initial setup
+    # Called automatically by initialize.
+    #
+    def neb_connect
+      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
+      @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
+
+      @stomp_handler.stomp_connect
+      @replyID = @stomp_handler.calc_reply_id
+      self
+    end
 
     
     ##
