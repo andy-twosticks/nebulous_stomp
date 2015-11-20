@@ -12,8 +12,8 @@ module Nebulous
   # A class to encapsulate a Nebulous message (which is built on top of a
   # STOMP message)
   #
-  # Note that this class REPLACES the old NebResponse class. There are
-  # differences:
+  # Note that this class REPLACES the old NebResponse class from 0.1.0. There
+  # are differences:
   #     * response.body -> message.stomp_body
   #     * response.headers -> message.stomp_headers
   #     * to_cache now returns a Hash, not a JSON string
@@ -43,6 +43,10 @@ module Nebulous
       # message by hand in Ruby, this is only reasonable.
       #
       # You must pass a verb; you can pass nil for all the other values.
+      #
+      # * replyTo - the queue to reply to if this is a Request
+      # * inReplyTo - the reply ID if this is a Response
+      # * verb, params, desc - The Protocol; the message to pass
       #
       def from_parts(replyTo, inReplyTo, verb, params, desc)
         raise ArgumentError, "missing parts" unless verb
@@ -157,6 +161,7 @@ module Nebulous
     end
 
 
+    ##
     # Return the hash of additional headers for the Stomp gem
     #
     def headers_for_stomp

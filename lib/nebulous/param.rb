@@ -71,7 +71,9 @@ module Nebulous
     ##
     # Set a logger instance
     #
-    def set_logger(lg); @logger = lg; end
+    def set_logger(lg)
+      @logger = lg
+    end
 
 
     ##

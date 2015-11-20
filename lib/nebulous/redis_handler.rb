@@ -1,7 +1,5 @@
 # coding: UTF-8
 
-# Helper routines to deal with Redis, the key-value store
-
 require 'redis'
 
 
@@ -49,6 +47,9 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   handler.connected? -> (boolean)
+    #
     # Call @redis.quit if appropriate; raise nothing if we are not connected etc
     #
     def quit

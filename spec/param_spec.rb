@@ -30,6 +30,7 @@ describe Param do
     end
 
   end # of Param::set
+  ##
 
 
   describe "Param::add_target" do
@@ -57,6 +58,7 @@ describe Param do
 
 
   end # of Param:add_target
+  ##
 
 
   describe "Param::get" do
@@ -77,6 +79,7 @@ describe Param do
 
 
   end # of param::get
+  ##
 
 
   describe "Param::get_target" do
@@ -96,6 +99,20 @@ describe Param do
 
       
   end # of get_target
+  ##
+
+
+  describe "Param::get_logger" do
+
+    it "returns the logger instance" do
+      l = Logger.new(STDOUT)
+      Param.set_logger(l)
+
+      expect( Param.get_logger ).to eq l
+    end
+
+  end
+  ##
 
 
 end

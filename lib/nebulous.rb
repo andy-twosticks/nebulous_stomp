@@ -9,14 +9,27 @@ require 'nebulous/version'
 require 'nebulous/param'
 
 
-# A little module that provides request-and-response over STOMP, with optional
-# cacheing using Redis. A specific "Nebulous Protocol" is used to handle this.
+##
+# A little module that implements the Nebulous Protocol, a way of passing data
+# over STOMP between different systems. We also support message cacheing via
+# Redis.
 #
 # Put simply: you can send a message to any other system that supports the
 # protocol, with an optional timeout, and get a response.
 #
-# Use Nebulous::init and Nebulous::add_target to set it up; then create a
-# Nebulous::Nebrequest, which will return a Nebulous::Message.
+# There are two use cases:
+#
+# First, sending a request for information and waiting for a response. To do
+# this you should create a Nebulous::NebRequest and call methods on it which
+# will return a Nebulous::Message, which will have either come from the cache
+# or from the remote target.
+#
+# Second, the other end of the deal: hanging around waiting for requests and
+# sending responses. To do this, you need to use the Nebulous::StompHandler
+# class, which will again furnish Nebulous::Meessage objects, and allow you to
+# create them.
+#
+# Some configuratuion is required: see Nebulous::init and Nebulous::add_target.
 #
 # Since you are setting the Redis connection details as part of initialisation,
 # you can also use it to connect to Redis, if you want. See
@@ -67,14 +80,18 @@ module Nebulous
   ##
   # Set an instance of Logger to log stuff to.
   def self.set_logger(logger)
-    Param.set_logger(:logger, logger)
+    raise NebulousError unless logger.kind_of(Logger)
+    Param.set_logger(logger)
   end
 
 
   ##
+  # :call-seq:
+  #   Nebulous.logger.info(__FILE__) { "message" }
+  #
   # Return a Logger instance to log things to.
   # If one was not given to Param, return a logger instance that
-  # uses a DevNull IO object.
+  # uses a DevNull IO object, that is, goes nowhere.
   #
   def self.logger
     Param.get_logger || Logger.new( DevNull.new )

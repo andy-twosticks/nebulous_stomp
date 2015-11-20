@@ -11,7 +11,10 @@ module Nebulous
 
 
   ##
-  # Class to handle requests and return a Message
+  # Class to handle a request which returns a Message
+  #
+  # Note that this has changed since 0.1.0. The principal difference is we
+  # return a Nebulous::Message; the NebResponse class no longer exists.
   #
   class NebRequest
 
@@ -62,6 +65,7 @@ module Nebulous
     #  params [String] the 'parameters' part of the message
     #  desc   [String] the 'description' part of the message
     #  stompHandler    ONLY FOR TESTING
+    #  redisHandler    ONLY FOR TESTING
     #
     def initialize( target, 
                     verb, 
@@ -128,7 +132,7 @@ module Nebulous
     #   request.send(mTimeout)          -> (Message)
     #   request.send(mTimeout,cTimeout) -> (Message)
     #
-    # As send_nocache, but without not checking the cache :)
+    # As send_nocache, but without not using the cache :)
     #
     # Parameters:
     #  mTimeout  [Fixnum] Message timout in seconds - defaults to @mTimeout
@@ -195,9 +199,6 @@ module Nebulous
 
 
     ##
-    # :call-seq:
-    #   request.neb_connect -> self
-    #
     # Connect to STOMP etc and do initial setup
     # Called automatically by initialize.
     #
