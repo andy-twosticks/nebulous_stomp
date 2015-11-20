@@ -74,6 +74,10 @@ describe RedisHandlerNull do
       expect( handler.get('woo') ).to eq 'arg'
     end
 
+    it "returns nil if the fake message is not set" do
+      expect( handler.get('foo') ).to be_nil
+    end
+
   end
   ##
 

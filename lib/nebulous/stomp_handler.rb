@@ -213,10 +213,10 @@ module Nebulous
 
       @client.publish( queue, "boo" )
 
-      done = nil  #bamf
+      done = false
 
       StompHandler.with_timeout(timeout) do |resource|
-        done = false
+        #done = false bamf
 
         @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
 

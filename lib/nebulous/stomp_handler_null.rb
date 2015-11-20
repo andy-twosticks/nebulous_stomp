@@ -51,12 +51,22 @@ module Nebulous
     end
 
 
-    def listen(queue, timeout = nil)
+    def listen(queue)
       Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
       yield @fake_mess
     end
 
-    alias :listen_with_timeout :listen
+
+    def listen_with_timeout(queue, timeout)
+      Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+
+      if @fake_mess
+        yield @fake_mess
+      else
+        sleep timeout
+        raise Nebulous::NebulousTimeout
+      end
+    end
 
 
     def send_message(queue, nebMess)

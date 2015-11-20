@@ -377,7 +377,7 @@ describe StompHandler do
       expect(stop - start).to be_within(0.5).of(2)
     end
 
-    it "raises NebulousError after a timeout" do
+    it "raises NebulousTimeout after a timeout" do
       expect{ run_listen_with_timeout(1) }.to raise_exception NebulousTimeout
     end
 

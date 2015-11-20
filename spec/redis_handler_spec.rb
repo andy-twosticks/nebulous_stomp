@@ -82,6 +82,18 @@ describe RedisHandler do
   end
   ##
   
+
+  describe '#redis_on?' do
+
+    it 'is true if we were passed any connection hash at all' do
+      expect( RedisHandler.new(nil).redis_on? ).to be_falsy
+
+      expect( handler.redis_on? ).to be_truthy
+    end
+
+  end
+  ##
+  
   
   context 'when forwarding other methods to Redis' do
 

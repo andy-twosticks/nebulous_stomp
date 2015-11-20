@@ -147,32 +147,12 @@ module Nebulous
       found = @redis_handler.get(@message.protocol_json)
       return Message.from_cache(found) unless found.nil?
 
+
       # No answer in Redis -- ask Nebulous
       nebMess = send_no_cache(mTimeout)
       @redis_handler.set(@message.protocol_json, nebMess.to_cache, ex: cTimeout)
 
       nebMess
-
-    ensure
-      @redis_handler.quit if @redis_handler
-    end
-
-
-    ##
-    # :call-seq:
-    #   request.get_from_cache -> (String || nil)
-    #
-    # Try to get the response from the cache. Returns the cached response, or
-    # nil if not found
-    #
-    # *Send* doesn't use this because it wants the redis handle to set the cache
-    # afterwards. The primary use for this is testing, but, who knows what
-    # other use we might find.
-    #
-    def get_from_cache
-      @redis_handler.connect unless @redis_handler.connected?
-
-      @redis_handler.get(@message.protocol_json)
 
     ensure
       @redis_handler.quit if @redis_handler
@@ -224,7 +204,7 @@ module Nebulous
     # `@redis_handler.connected?`)
     #
     def redis_on?
-      ! Param.get(:redisConnectHash).nil?
+      @redis_handler.redis_on?
     end
 
 

@@ -1,5 +1,6 @@
-require 'time'
 require 'spec_helper'
+
+require 'time'
 
 require 'nebulous/stomp_handler_null'
 
@@ -142,15 +143,27 @@ describe StompHandlerNull do
       got
     end
 
+    context "when there is a message" do
 
-    it "yields a Message" do
-      handler.insert_fake('foo', 'bar', 'baz')
-      gotMessage = run_listen_with_timeout(1)
+      it "yields a Message" do
+        handler.insert_fake('foo', 'bar', 'baz')
+        gotMessage = run_listen_with_timeout(1)
 
-      expect( gotMessage ).not_to be_nil
-      expect( gotMessage ).to be_a_kind_of Nebulous::Message
+        expect( gotMessage ).not_to be_nil
+        expect( gotMessage ).to be_a_kind_of Nebulous::Message
+      end
+
     end
 
+    context "when there is no message" do
+
+      it 'raises NebulousTimeout' do
+        expect{handler.listen_with_timeout('foo', 2)}.
+          to raise_exception Nebulous::NebulousTimeout
+
+      end
+
+    end
 
   end
   ##

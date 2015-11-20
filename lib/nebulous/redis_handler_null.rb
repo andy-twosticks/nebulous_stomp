@@ -50,9 +50,10 @@ module Nebulous
 
     def set(key, value, hash=nil); insert_fake(key, value); end
 
+    def del(key); @fake_pair = {}; end
+
     def get(key); @fake_pair.values.first; end
 
-    def del(key); @fake_pair = {}; end
 
   end 
 

@@ -67,6 +67,22 @@ module Nebulous
 
 
     ##
+    # :call-seq:
+    #   handler.redis_on? -> (boolean)
+    #
+    # Return whether the Redis is turned "on" in the connect hash, the config
+    # file.
+    #
+    # The rest of nebulous should just let RedisHandler worry about this
+    # detail.
+    #
+    def redis_on?
+      !@redis_hash.nil?
+    end
+
+
+
+    ##
     # Cover all the other methods on @redis that we are basically forwarding to
     # it. I could use Forwardable here -- except that would not allow us to
     # raise Nebulous::ConnectionError if @redis.nil?
