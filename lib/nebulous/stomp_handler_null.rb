@@ -17,27 +17,17 @@ module Nebulous
   #
   class StompHandlerNull < StompHandler
 
+    attr_reader :fake_mess
+
 
     def initialize(hash=nil)
       super(hash)
-
-      @fakeMess = 
-        Nebulous::Message.from_cache( { stompHeaders: {},
-                                        stompBody:    '',
-                                        verb:         '',
-                                        params:       '',
-                                        desc:         '',
-                                        replyTo:      nil,
-                                        replyId:      nil,
-                                        inReplyTo:    nil,
-                                        contentType:  nil }.to_json )
-
-
+      @fake_mess = nil
     end
 
 
     def insert_fake(verb, params, desc)
-      @fakeMess = Message.from_parts( nil, nil, verb, params, desc )
+      @fake_mess = Message.from_parts( nil, nil, verb, params, desc )
     end
 
 
@@ -56,12 +46,14 @@ module Nebulous
     end
 
     
-    def connected?; true; end
+    def connected? 
+      @fake_mess != nil
+    end
 
 
     def listen(queue, timeout = nil)
       Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
-      yield @fakeMess
+      yield @fake_mess
     end
 
     alias :listen_with_timeout :listen

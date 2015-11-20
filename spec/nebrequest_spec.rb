@@ -122,6 +122,13 @@ describe NebRequest do
       end
 
       it "returns the answer from the cache the second time" do
+       
+        request = NebRequest.new('accord', 'foo', nil, nil, @client)
+
+        response = request.send
+        expect( response ).to be_a Nebulous::Message
+        expect( response.verb ).to eq('foo')
+
 
         # First time
         request = NebRequest.new('accord', 'foo', nil, nil, @client)

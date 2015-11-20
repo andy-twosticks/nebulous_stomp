@@ -21,7 +21,7 @@ describe StompHandlerNull do
   end
 
 
-  describe 'StompHandler.body_to_hash' do
+  describe 'StompHandlerNull.body_to_hash' do
 
     it "returns a hash" do
       expect{ StompHandlerNull.body_to_hash({}, 'baz') }.not_to raise_exception
@@ -40,6 +40,33 @@ describe StompHandlerNull do
 
   end
   ##
+  
+
+  describe '#insert_fake' do
+
+    it 'sets the message to send' do
+      handler.insert_fake('foo', 'bar', 'baz')
+      expect( handler.fake_mess ).to be_a_kind_of Nebulous::Message
+      expect( handler.fake_mess.verb ).to eq 'foo'
+    end
+
+  end
+  ##
+  
+
+  describe '#connected?' do
+
+    it 'returns false if fake_message was not called' do
+      expect( handler.connected? ).to be_falsey
+    end
+
+    it 'returns true if fake_message was called' do
+      handler.insert_fake('one', 'two', 'three')
+      expect( handler.connected? ).to be_truthy
+    end
+
+  end
+  ##
 
 
   describe "#stomp_connect" do
@@ -54,7 +81,7 @@ describe StompHandlerNull do
 
   describe "#calc_reply_id" do
 
-    it "returns a unique string" do
+    it "returns a 'unique' string" do
       handler.stomp_connect
       expect( handler.calc_reply_id ).to respond_to :upcase
       expect( handler.calc_reply_id.size ).to be > 12
@@ -93,6 +120,7 @@ describe StompHandlerNull do
 
 
     it "yields a Message" do
+      handler.insert_fake('foo', 'bar', 'baz')
       gotMessage = run_listen(1)
 
       expect(gotMessage).not_to be_nil
@@ -116,6 +144,7 @@ describe StompHandlerNull do
 
 
     it "yields a Message" do
+      handler.insert_fake('foo', 'bar', 'baz')
       gotMessage = run_listen_with_timeout(1)
 
       expect( gotMessage ).not_to be_nil
