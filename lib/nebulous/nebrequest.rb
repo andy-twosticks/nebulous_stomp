@@ -100,8 +100,8 @@ module Nebulous
 
     ##
     # :call-seq:
-    #   request.send_no_cache           -> (Message)
-    #   request.send_no_cache(mTimeout) -> (Message)
+    #     request.send_no_cache           -> (Message)
+    #     request.send_no_cache(mTimeout) -> (Message)
     #
     # Send a request and return the response, without using the cache.
     #
@@ -128,9 +128,9 @@ module Nebulous
 
     ##
     # ::call-seq::
-    #   request.send                    -> (Message)
-    #   request.send(mTimeout)          -> (Message)
-    #   request.send(mTimeout,cTimeout) -> (Message)
+    #     request.send                    -> (Message)
+    #     request.send(mTimeout)          -> (Message)
+    #     request.send(mTimeout,cTimeout) -> (Message)
     #
     # As send_nocache, but without not using the cache :)
     #

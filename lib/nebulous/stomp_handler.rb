@@ -196,13 +196,14 @@ module Nebulous
     ##
     # As listen() but give up after yielding a single message, and only wait
     # for a set number of seconds before giving up anyway.
-    #
+    #--
     # Ideally I'd like to DRY this and listen() up, but with this
     # yield-within-a-thread stuff going on, I'm actually not sure how to do
     # that safely.
     #
     # Actually i'm not even sure how to stop once I've read one message. The
     # Stomp gem behaves very strangely.
+    #++
     #
     def listen_with_timeout(queue, timeout)
       Nebulous.logger.info(__FILE__) do

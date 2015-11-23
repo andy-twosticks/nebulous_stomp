@@ -1,59 +1,124 @@
 !_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
 !_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
-NebRequest	./lib/nebulous/nebrequest.rb	/^  class NebRequest$/;"	c	class:Nebulous
-NebResponse	./lib/nebulous/nebresponse.rb	/^  class NebResponse$/;"	c	class:Nebulous
-Nebulous	./lib/nebulous.rb	/^module Nebulous$/;"	m
-Nebulous	./lib/nebulous/nebrequest.rb	/^module Nebulous$/;"	m
-Nebulous	./lib/nebulous/nebresponse.rb	/^module Nebulous$/;"	m
-Nebulous	./lib/nebulous/param.rb	/^module Nebulous$/;"	m
-Nebulous	./lib/nebulous/redishandler.rb	/^module Nebulous$/;"	m
-Nebulous	./lib/nebulous/version.rb	/^module Nebulous$/;"	m
-NebulousError	./lib/nebulous.rb	/^  class NebulousError < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
-NebulousTimeout	./lib/nebulous.rb	/^  class NebulousTimeout < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
-Param	./lib/nebulous/param.rb	/^  module Param$/;"	m	class:Nebulous
-ParamDefaults	./lib/nebulous/param.rb	/^    ParamDefaults = { stompConnectHash: {},$/;"	C	class:Nebulous.Param
-RedisHandler	./lib/nebulous/redishandler.rb	/^  class RedisHandler$/;"	c	class:Nebulous
-TargetDefaults	./lib/nebulous/param.rb	/^    TargetDefaults = { sendQueue:      nil,$/;"	C	class:Nebulous.Param
-VERSION	./lib/nebulous/version.rb	/^  VERSION = "0.1.0"$/;"	C	class:Nebulous
-add_target	./lib/nebulous.rb	/^  def self.add_target(name, targetHash) # -> nil$/;"	F	class:Nebulous
-add_target	./lib/nebulous/param.rb	/^    def add_target(n, t)$/;"	f	class:Nebulous.Param
-body	./lib/nebulous/nebresponse.rb	/^    attr_reader :body      $/;"	f	class:Nebulous.NebResponse
-body_to_h	./lib/nebulous/nebresponse.rb	/^    def body_to_h$/;"	f	class:Nebulous.NebResponse
-cTimeout	./lib/nebulous/nebrequest.rb	/^    attr_reader :cTimeout$/;"	f	class:Nebulous.NebRequest
-calc_replyID	./lib/nebulous/nebrequest.rb	/^    def calc_replyID$/;"	f	class:Nebulous.NebRequest
-clear_cache	./lib/nebulous/nebrequest.rb	/^    def clear_cache$/;"	f	class:Nebulous.NebRequest
-client	./lib/nebulous/nebrequest.rb	/^    attr_reader :client$/;"	f	class:Nebulous.NebRequest
-connect	./lib/nebulous/redishandler.rb	/^    def self.connect$/;"	F	class:Nebulous.RedisHandler
-desc	./lib/nebulous/nebrequest.rb	/^    attr_reader :desc$/;"	f	class:Nebulous.NebRequest
-description	./lib/nebulous/nebresponse.rb	/^    attr_reader :verb, :parameters, :description $/;"	f	class:Nebulous.NebResponse
-get	./lib/nebulous/param.rb	/^    def get(p)$/;"	f	class:Nebulous.Param
-get_all	./lib/nebulous/param.rb	/^    def get_all()$/;"	f	class:Nebulous.Param
-get_from_cache	./lib/nebulous/nebrequest.rb	/^    def get_from_cache$/;"	f	class:Nebulous.NebRequest
-get_target	./lib/nebulous/param.rb	/^    def get_target(name)$/;"	f	class:Nebulous.Param
-headers	./lib/nebulous/nebresponse.rb	/^    attr_reader :headers   $/;"	f	class:Nebulous.NebResponse
-init	./lib/nebulous.rb	/^  def self.init(paramHash={}) $/;"	F	class:Nebulous
-initialize	./lib/nebulous/nebrequest.rb	/^    def initialize(target, verb, params=nil, desc=nil, client=nil)$/;"	f	class:Nebulous.NebRequest
-initialize	./lib/nebulous/nebresponse.rb	/^    def initialize(thingy)$/;"	f	class:Nebulous.NebResponse
-initialize_from_stomp	./lib/nebulous/nebresponse.rb	/^    def initialize_from_stomp(stompMessage)$/;"	f	class:Nebulous.NebResponse
-initialize_from_string	./lib/nebulous/nebresponse.rb	/^    def initialize_from_string(string)$/;"	f	class:Nebulous.NebResponse
-mTimeout	./lib/nebulous/nebrequest.rb	/^    attr_reader :mTimeout$/;"	f	class:Nebulous.NebRequest
-message	./lib/nebulous/nebrequest.rb	/^    attr_reader :message$/;"	f	class:Nebulous.NebRequest
-neb_connect	./lib/nebulous/nebrequest.rb	/^    def neb_connect$/;"	f	class:Nebulous.NebRequest
-neb_qna	./lib/nebulous/nebrequest.rb	/^    def neb_qna(mTimeout)$/;"	f	class:Nebulous.NebRequest
-parameters	./lib/nebulous/nebresponse.rb	/^    attr_reader :verb, :parameters, :description $/;"	f	class:Nebulous.NebResponse
-params	./lib/nebulous/nebrequest.rb	/^    attr_reader :params    $/;"	f	class:Nebulous.NebRequest
-redis_on?	./lib/nebulous/nebrequest.rb	/^    def redis_on?$/;"	f	class:Nebulous.NebRequest
-replyID	./lib/nebulous/nebrequest.rb	/^    attr_reader :replyID$/;"	f	class:Nebulous.NebRequest
-requestQ	./lib/nebulous/nebrequest.rb	/^    attr_reader :requestQ$/;"	f	class:Nebulous.NebRequest
-responseQ	./lib/nebulous/nebrequest.rb	/^    attr_reader :responseQ$/;"	f	class:Nebulous.NebRequest
-send	./lib/nebulous/nebrequest.rb	/^    def send(mTimeout=@mTimeout, cTimeout=@cTimeout)$/;"	f	class:Nebulous.NebRequest
-send_no_cache	./lib/nebulous/nebrequest.rb	/^    def send_no_cache(mTimeout=@mTimeout)$/;"	f	class:Nebulous.NebRequest
-set	./lib/nebulous/param.rb	/^    def set(p={})$/;"	f	class:Nebulous.Param
-stomp_connect	./lib/nebulous/nebrequest.rb	/^    def self.stomp_connect$/;"	F	class:Nebulous.NebRequest
-target	./lib/nebulous/nebrequest.rb	/^    attr_reader :target$/;"	f	class:Nebulous.NebRequest
-to_cache	./lib/nebulous/nebresponse.rb	/^    def to_cache$/;"	f	class:Nebulous.NebResponse
-to_protocol	./lib/nebulous/nebrequest.rb	/^    def self.to_protocol(verb, params = nil, desc = nil)$/;"	F	class:Nebulous.NebRequest
-validate	./lib/nebulous/param.rb	/^    def validate(exemplar, hash, message)$/;"	f	class:Nebulous.Param
-verb	./lib/nebulous/nebrequest.rb	/^    attr_reader :verb      $/;"	f	class:Nebulous.NebRequest
-verb	./lib/nebulous/nebresponse.rb	/^    attr_reader :verb, :parameters, :description $/;"	f	class:Nebulous.NebResponse
-with_timeout	./lib/nebulous/nebrequest.rb	/^    def self.with_timeout(secs)$/;"	F	class:Nebulous.NebRequest
+ConnectionError	lib/nebulous.rb	/^  class ConnectionError < NebulousError; end$/;"	c	class:Nebulous	inherits:NebulousError
+DocNoPending	spec/doc_no_pending.rb	/^class DocNoPending < RSpec::Core::Formatters::DocumentationFormatter$/;"	c	inherits:RSpec.Core.Formatters.DocumentationFormatter
+Helpers	spec/helpers.rb	/^module Helpers$/;"	m
+Message	lib/nebulous/message.rb	/^  class Message$/;"	c	class:Nebulous
+NebRequest	lib/nebulous/nebrequest.rb	/^  class NebRequest$/;"	c	class:Nebulous
+Nebulous	lib/nebulous.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/message.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/nebrequest.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/param.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/redis_handler.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/redis_handler_null.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/stomp_handler.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/stomp_handler_null.rb	/^module Nebulous$/;"	m
+Nebulous	lib/nebulous/version.rb	/^module Nebulous$/;"	m
+NebulousError	lib/nebulous.rb	/^  class NebulousError < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
+NebulousTimeout	lib/nebulous.rb	/^  class NebulousTimeout < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
+Param	lib/nebulous/param.rb	/^  module Param$/;"	m	class:Nebulous
+ParamDefaults	lib/nebulous/param.rb	/^    ParamDefaults = { stompConnectHash: {},$/;"	C	class:Nebulous.Param
+RedisHandler	lib/nebulous/redis_handler.rb	/^  class RedisHandler$/;"	c	class:Nebulous
+RedisHandlerNull	lib/nebulous/redis_handler_null.rb	/^  class RedisHandlerNull < RedisHandler$/;"	c	class:Nebulous	inherits:RedisHandler
+StompHandler	lib/nebulous/stomp_handler.rb	/^  class StompHandler$/;"	c	class:Nebulous
+StompHandlerNull	lib/nebulous/stomp_handler_null.rb	/^  class StompHandlerNull < StompHandler$/;"	c	class:Nebulous	inherits:StompHandler
+TargetDefaults	lib/nebulous/param.rb	/^    TargetDefaults = { sendQueue:      nil,$/;"	C	class:Nebulous.Param
+VERSION	lib/nebulous/version.rb	/^  VERSION = "1.0.0"$/;"	C	class:Nebulous
+add_target	lib/nebulous.rb	/^  def self.add_target(name, targetHash) # -> nil$/;"	F	class:Nebulous
+add_target	lib/nebulous/param.rb	/^    def add_target(n, t)$/;"	f	class:Nebulous.Param
+body_for_stomp	lib/nebulous/message.rb	/^    def body_for_stomp$/;"	f	class:Nebulous.Message
+body_to_h	lib/nebulous/message.rb	/^    def body_to_h$/;"	f	class:Nebulous.Message
+body_to_hash	lib/nebulous/stomp_handler.rb	/^      def body_to_hash(headers, body, contentType=nil)$/;"	F	class:Nebulous.StompHandler
+cTimeout	lib/nebulous/nebrequest.rb	/^    attr_reader :cTimeout$/;"	f	class:Nebulous.NebRequest
+calc_reply_id	lib/nebulous/stomp_handler.rb	/^    def calc_reply_id$/;"	f	class:Nebulous.StompHandler
+calc_reply_id	lib/nebulous/stomp_handler_null.rb	/^    def calc_reply_id; 'ABCD123456789'; end$/;"	f	class:Nebulous.StompHandlerNull
+clear_cache	lib/nebulous/nebrequest.rb	/^    def clear_cache$/;"	f	class:Nebulous.NebRequest
+client	lib/nebulous/stomp_handler.rb	/^    attr_reader :client$/;"	f	class:Nebulous.StompHandler
+connect	lib/nebulous/redis_handler.rb	/^    def connect$/;"	f	class:Nebulous.RedisHandler
+connect	lib/nebulous/redis_handler_null.rb	/^    def connect$/;"	f	class:Nebulous.RedisHandlerNull
+connected?	lib/nebulous/redis_handler.rb	/^    def connected?$/;"	f	class:Nebulous.RedisHandler
+connected?	lib/nebulous/redis_handler_null.rb	/^    def connected?$/;"	f	class:Nebulous.RedisHandlerNull
+connected?	lib/nebulous/stomp_handler.rb	/^    def connected?$/;"	f	class:Nebulous.StompHandler
+connected?	lib/nebulous/stomp_handler_null.rb	/^    def connected? $/;"	f	class:Nebulous.StompHandlerNull
+content_is_json?	lib/nebulous/message.rb	/^    def content_is_json?$/;"	f	class:Nebulous.Message
+content_type	lib/nebulous/message.rb	/^    attr_reader :content_type$/;"	f	class:Nebulous.Message
+del	lib/nebulous/redis_handler_null.rb	/^    def del(key); @fake_pair = {}; end$/;"	f	class:Nebulous.RedisHandlerNull
+desc	lib/nebulous/message.rb	/^    attr_reader :verb, :params, :desc$/;"	f	class:Nebulous.Message
+desc	lib/nebulous/nebrequest.rb	/^    attr_reader :desc$/;"	f	class:Nebulous.NebRequest
+description	lib/nebulous/message.rb	/^    alias :description :desc$/;"	a	class:Nebulous.Message
+example_pending	spec/doc_no_pending.rb	/^  def example_pending(notifications); end$/;"	f	class:DocNoPending
+fake_mess	lib/nebulous/stomp_handler_null.rb	/^    attr_reader :fake_mess$/;"	f	class:Nebulous.StompHandlerNull
+fake_pair	lib/nebulous/redis_handler_null.rb	/^    attr_reader :fake_pair$/;"	f	class:Nebulous.RedisHandlerNull
+fill_from_message	lib/nebulous/message.rb	/^    def fill_from_message$/;"	f	class:Nebulous.Message
+from_cache	lib/nebulous/message.rb	/^      def from_cache(json)$/;"	F	class:Nebulous.Message
+from_parts	lib/nebulous/message.rb	/^      def from_parts(replyTo, inReplyTo, verb, params, desc)$/;"	F	class:Nebulous.Message
+from_stomp	lib/nebulous/message.rb	/^      def from_stomp(stompMsg)$/;"	F	class:Nebulous.Message
+get	lib/nebulous/param.rb	/^    def get(p)$/;"	f	class:Nebulous.Param
+get	lib/nebulous/redis_handler_null.rb	/^    def get(key); @fake_pair.values.first; end$/;"	f	class:Nebulous.RedisHandlerNull
+get_all	lib/nebulous/param.rb	/^    def get_all()$/;"	f	class:Nebulous.Param
+get_logger	lib/nebulous/param.rb	/^    def get_logger; @logger; end$/;"	f	class:Nebulous.Param
+get_target	lib/nebulous/param.rb	/^    def get_target(name)$/;"	f	class:Nebulous.Param
+headers_for_stomp	lib/nebulous/message.rb	/^    def headers_for_stomp$/;"	f	class:Nebulous.Message
+in_reply_to	lib/nebulous/message.rb	/^      def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)$/;"	F	class:Nebulous.Message
+in_reply_to	lib/nebulous/message.rb	/^    attr_reader :reply_to, :in_reply_to $/;"	f	class:Nebulous.Message
+init	lib/nebulous.rb	/^  def self.init(paramHash={}) $/;"	F	class:Nebulous
+initialize	lib/nebulous/message.rb	/^    def initialize(hash)$/;"	f	class:Nebulous.Message
+initialize	lib/nebulous/nebrequest.rb	/^    def initialize( target, $/;"	f	class:Nebulous.NebRequest
+initialize	lib/nebulous/redis_handler.rb	/^    def initialize(connectHash, testRedis=nil)$/;"	f	class:Nebulous.RedisHandler
+initialize	lib/nebulous/redis_handler_null.rb	/^    def initialize(connectHash=nil)$/;"	f	class:Nebulous.RedisHandlerNull
+initialize	lib/nebulous/stomp_handler.rb	/^    def initialize(connectHash, testClient=nil)$/;"	f	class:Nebulous.StompHandler
+initialize	lib/nebulous/stomp_handler_null.rb	/^    def initialize(hash=nil)$/;"	f	class:Nebulous.StompHandlerNull
+insert_fake	lib/nebulous/redis_handler_null.rb	/^    def insert_fake(key, value)$/;"	f	class:Nebulous.RedisHandlerNull
+insert_fake	lib/nebulous/stomp_handler_null.rb	/^    def insert_fake(verb, params, desc)$/;"	f	class:Nebulous.StompHandlerNull
+listen	lib/nebulous/stomp_handler.rb	/^    def listen(queue)$/;"	f	class:Nebulous.StompHandler
+listen	lib/nebulous/stomp_handler_null.rb	/^    def listen(queue)$/;"	f	class:Nebulous.StompHandlerNull
+listen_with_timeout	lib/nebulous/stomp_handler.rb	/^    def listen_with_timeout(queue, timeout)$/;"	f	class:Nebulous.StompHandler
+listen_with_timeout	lib/nebulous/stomp_handler_null.rb	/^    def listen_with_timeout(queue, timeout)$/;"	f	class:Nebulous.StompHandlerNull
+logger	lib/nebulous.rb	/^  def self.logger$/;"	F	class:Nebulous
+mTimeout	lib/nebulous/nebrequest.rb	/^    attr_reader :mTimeout$/;"	f	class:Nebulous.NebRequest
+message	lib/nebulous/nebrequest.rb	/^    attr_reader :message$/;"	f	class:Nebulous.NebRequest
+method_missing	lib/nebulous/redis_handler.rb	/^    def method_missing(meth, *args)$/;"	f	class:Nebulous.RedisHandler
+neb_connect	lib/nebulous/nebrequest.rb	/^    def neb_connect$/;"	f	class:Nebulous.NebRequest
+neb_qna	lib/nebulous/nebrequest.rb	/^    def neb_qna(mTimeout)$/;"	f	class:Nebulous.NebRequest
+parameters	lib/nebulous/message.rb	/^    alias :parameters  :params$/;"	a	class:Nebulous.Message
+params	lib/nebulous/message.rb	/^    attr_reader :verb, :params, :desc$/;"	f	class:Nebulous.Message
+params	lib/nebulous/nebrequest.rb	/^    attr_reader :params    $/;"	f	class:Nebulous.NebRequest
+protocol_hash	lib/nebulous/message.rb	/^    def protocol_hash$/;"	f	class:Nebulous.Message
+protocol_json	lib/nebulous/message.rb	/^    def protocol_json$/;"	f	class:Nebulous.Message
+quit	lib/nebulous/redis_handler.rb	/^    def quit$/;"	f	class:Nebulous.RedisHandler
+quit	lib/nebulous/redis_handler_null.rb	/^    def quit$/;"	f	class:Nebulous.RedisHandlerNull
+redis	lib/nebulous/redis_handler.rb	/^    attr_reader :redis$/;"	f	class:Nebulous.RedisHandler
+redis_on?	lib/nebulous/nebrequest.rb	/^    def redis_on?$/;"	f	class:Nebulous.NebRequest
+redis_on?	lib/nebulous/redis_handler.rb	/^    def redis_on?$/;"	f	class:Nebulous.RedisHandler
+replyID	lib/nebulous/nebrequest.rb	/^    attr_reader :replyID$/;"	f	class:Nebulous.NebRequest
+reply_id	lib/nebulous/message.rb	/^    attr_accessor :reply_id$/;"	f	class:Nebulous.Message
+reply_id=	lib/nebulous/message.rb	/^    attr_accessor :reply_id$/;"	f	class:Nebulous.Message
+reply_to	lib/nebulous/message.rb	/^    attr_reader :reply_to, :in_reply_to $/;"	f	class:Nebulous.Message
+requestQ	lib/nebulous/nebrequest.rb	/^    attr_reader :requestQ$/;"	f	class:Nebulous.NebRequest
+respond_error	lib/nebulous/message.rb	/^    def respond_error(err,fields=[])$/;"	f	class:Nebulous.Message
+respond_error	lib/nebulous/stomp_handler_null.rb	/^    def respond_error(nebMess,err,fields=[])$/;"	f	class:Nebulous.StompHandlerNull
+respond_success	lib/nebulous/message.rb	/^    def respond_success$/;"	f	class:Nebulous.Message
+respond_success	lib/nebulous/stomp_handler_null.rb	/^    def respond_success(nebMess)$/;"	f	class:Nebulous.StompHandlerNull
+responseQ	lib/nebulous/nebrequest.rb	/^    attr_reader :responseQ$/;"	f	class:Nebulous.NebRequest
+send	lib/nebulous/nebrequest.rb	/^    def send(mTimeout=@mTimeout, cTimeout=@cTimeout)$/;"	f	class:Nebulous.NebRequest
+send_message	lib/nebulous/stomp_handler.rb	/^    def send_message(queue, mess)$/;"	f	class:Nebulous.StompHandler
+send_message	lib/nebulous/stomp_handler_null.rb	/^    def send_message(queue, nebMess)$/;"	f	class:Nebulous.StompHandlerNull
+send_no_cache	lib/nebulous/nebrequest.rb	/^    def send_no_cache(mTimeout=@mTimeout)$/;"	f	class:Nebulous.NebRequest
+set	lib/nebulous/param.rb	/^    def set(p={})$/;"	f	class:Nebulous.Param
+set	lib/nebulous/redis_handler_null.rb	/^    def set(key, value, hash=nil); insert_fake(key, value); end$/;"	f	class:Nebulous.RedisHandlerNull
+set_logger	lib/nebulous.rb	/^  def self.set_logger(logger)$/;"	F	class:Nebulous
+set_logger	lib/nebulous/param.rb	/^    def set_logger(lg)$/;"	f	class:Nebulous.Param
+stomp_body	lib/nebulous/message.rb	/^    attr_reader :stomp_headers, :stomp_body$/;"	f	class:Nebulous.Message
+stomp_connect	lib/nebulous/stomp_handler.rb	/^    def stomp_connect$/;"	f	class:Nebulous.StompHandler
+stomp_connect	lib/nebulous/stomp_handler_null.rb	/^    def stomp_connect$/;"	f	class:Nebulous.StompHandlerNull
+stomp_disconnect	lib/nebulous/stomp_handler.rb	/^    def stomp_disconnect$/;"	f	class:Nebulous.StompHandler
+stomp_disconnect	lib/nebulous/stomp_handler_null.rb	/^    def stomp_disconnect$/;"	f	class:Nebulous.StompHandlerNull
+stomp_headers	lib/nebulous/message.rb	/^    attr_reader :stomp_headers, :stomp_body$/;"	f	class:Nebulous.Message
+stomp_message	spec/helpers.rb	/^  def stomp_message(contentType, body, inReplyTo=nil)$/;"	f	class:Helpers
+target	lib/nebulous/nebrequest.rb	/^    attr_reader :target$/;"	f	class:Nebulous.NebRequest
+to_cache	lib/nebulous/message.rb	/^    def to_cache$/;"	f	class:Nebulous.Message
+to_s	lib/nebulous/message.rb	/^    def to_s$/;"	f	class:Nebulous.Message
+validate	lib/nebulous/param.rb	/^    def validate(exemplar, hash, message)$/;"	f	class:Nebulous.Param
+verb	lib/nebulous/message.rb	/^    attr_reader :verb, :params, :desc$/;"	f	class:Nebulous.Message
+verb	lib/nebulous/nebrequest.rb	/^    attr_reader :verb      $/;"	f	class:Nebulous.NebRequest
+with_timeout	lib/nebulous/stomp_handler.rb	/^      def with_timeout(secs)$/;"	F	class:Nebulous.StompHandler

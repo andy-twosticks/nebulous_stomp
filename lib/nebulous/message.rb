@@ -29,6 +29,7 @@ module Nebulous
     # The content type of the message
     attr_reader :content_type
 
+    # The Nebulous Protocol
     attr_reader :verb, :params, :desc
     attr_reader :reply_to, :in_reply_to 
 
@@ -66,6 +67,9 @@ module Nebulous
       ##
       # Build a Message that replies to an existing Message
       #
+      # * msg - the Nebulous::Message that you are replying to
+      # * verb, params, desc - the new message Protocol 
+      #
       def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)
         raise ArgumentError, 'bad message' unless msg.kind_of? Message
 
@@ -98,6 +102,8 @@ module Nebulous
 
       ##
       # To build a Nebmessage from a record in the Redis cache
+      #
+      # See #to_cache for details of the hash that Redis should be storing
       # 
       def from_cache(json)
         raise ArgumentError, "That can't be JSON, it's not a string" \
@@ -146,6 +152,17 @@ module Nebulous
 
     ##
     # Output a hash for serialization to the cache.
+    #
+    # Currently this looks like:
+    #    { stompHeaders: @stomp_headers,
+    #      stompBody:    @stomp_body,
+    #      verb:         @verb,
+    #      params:       @params,
+    #      desc:         @desc,
+    #      replyTo:      @reply_to,
+    #      replyId:      @reply_id,
+    #      inReplyTo:    @in_reply_to,
+    #      contentType:  @content_type }
     #
     def to_cache
       { stompHeaders: @stomp_headers,
