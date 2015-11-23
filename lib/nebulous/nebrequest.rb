@@ -1,13 +1,20 @@
 # coding: UTF-8
 
-require 'stomp'
+require 'nebulous'
+
+require_relative 'stomp_handler'
+require_relative 'redis_handler'
+require_relative 'message'
 
 
 module Nebulous
 
 
   ##
-  # Class to handle requests and return a NebResponse
+  # Class to handle a request which returns a Message
+  #
+  # Note that this has changed since 0.1.0. The principal difference is we
+  # return a Nebulous::Message; the NebResponse class no longer exists.
   #
   class NebRequest
 
@@ -24,9 +31,6 @@ module Nebulous
     # The 'description' part of the message
     attr_reader :desc
     
-    # The STOMP client instance (dependancy injection for testing)
-    attr_reader :client
-
     # The 'replyID' header to use in this message 
     attr_reader :replyID
 
@@ -60,11 +64,19 @@ module Nebulous
     #  verb   [String] the 'verb' part of the message
     #  params [String] the 'parameters' part of the message
     #  desc   [String] the 'description' part of the message
-    #  client          ONLY FOR TESTING
+    #  stompHandler    ONLY FOR TESTING
+    #  redisHandler    ONLY FOR TESTING
     #
-    def initialize(target, verb, params=nil, desc=nil, client=nil)
+    def initialize( target, 
+                    verb, 
+                    params=nil, 
+                    desc=nil, 
+                    stompHandler=nil, 
+                    redisHandler=nil )
 
-      # The target name -- should point to data in SwingShift::PARAMS
+      Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
+
+      # The target name -- should point to data in the parameter hash
       @target = target                           
 
       targetHash = Param.get_target(@target)
@@ -73,12 +85,13 @@ module Nebulous
       @verb, @params, @desc = verb, params, desc 
 
       @cTimeout  = Param.get(:cacheTimeout)
-      @message   = NebRequest.to_protocol(verb, params, desc)
       @requestQ  = targetHash[:sendQueue]
       @responseQ = targetHash[:receiveQueue]
+      @message   = Message.from_parts(@responseQ, nil, verb, params, desc)
       @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
-      @client    = client
-      @replyID   = nil
+      @stomp_handler = stompHandler 
+      @redis_handler = redisHandler 
+      @replyID       = nil
 
       # Now we connect and set @replyID 
       neb_connect
@@ -87,86 +100,8 @@ module Nebulous
 
     ##
     # :call-seq:
-    #   NebRequest.to_protocol(verb, params = nil, desc = nil) -> (String)
-    #
-    # Return a message body formatted for The Protocol.
-    #
-    # Parameters:
-    #  verb      [String] the code for the action taken by the receiver
-    #  params    [String] parameters for the action routine
-    #  desc      [String] text for logs, users, etc
-    #  (Returns) [String] Message formatted as JSON
-    #
-    def self.to_protocol(verb, params = nil, desc = nil)
-      h = {verb: verb}
-      h[:parameters]  = params unless params.nil?
-      h[:description] = desc   unless desc.nil?
-
-      return h.to_json
-    end
-
-
-    ##
-    # :call-seq:
-    #   NebRequest.stomp_connect() -> (STOMP.client)
-    #
-    # Connect to the STOMP message server. Raise Nebulous::NebulousError if the
-    # connection fails.
-    #
-    def self.stomp_connect
-      client = Stomp::Client.new( Param.get(:stompConnectHash) )
-      raise NebulousError, "Stomp Connection failed" unless client.open?
-
-      conn = client.connection_frame()
-      if conn.command == Stomp::CMD_ERROR
-        raise NebulousError, "Connect Error: #{conn.body}" 
-      end
-
-      return client
-    end
-
-
-    ##
-    # :call-seq:
-    #   NebRequest.with_timeout(secs) -> (nil)
-    #
-    # Run a routine with a timeout.
-    #
-    # Example:
-    #  with_timeout(10) do |r|
-    #    sleep 20
-    #    r.signal
-    #  end
-    #
-    # Use `r.signal` to signal when the process has finished. You need to
-    # arrange your own method of working out whether the timeout fired or not.
-    #
-    # There is a Ruby standard library for this, Timeout. But there appears to
-    # be some argument as to whether it is threadsafe; so, we roll our own. It
-    # probably doesn't matter since both Redis and Stomp do use Timeout. But.
-    #
-    def self.with_timeout(secs)
-      mutex    = Mutex.new
-      resource = ConditionVariable.new
-
-      Thread.new do
-        mutex.synchronize do
-          yield resource
-        end
-      end
-
-      mutex.synchronize do
-        resource.wait(mutex, secs)
-      end
-
-      return nil
-    end
-
-
-    ##
-    # :call-seq:
-    #   request.send_no_cache           -> (NebResponse)
-    #   request.send_no_cache(mTimeout) -> (NebResponse)
+    #     request.send_no_cache           -> (Message)
+    #     request.send_no_cache(mTimeout) -> (Message)
     #
     # Send a request and return the response, without using the cache.
     #
@@ -181,24 +116,23 @@ module Nebulous
     def send_no_cache(mTimeout=@mTimeout)
 
       # If we've lost the connection then reconnect but *keep replyID*
-      @client = NebRequest.stomp_connect unless @client.open?
-      @replyID = get_replyID if @replyID.nil? 
+      @stomp_handler.stomp_connect unless @stomp_handler.connected?
+      @replyID = @stomp_handler.calc_reply_id if @replyID.nil? 
 
-      response = neb_qna(mTimeout)
-      return NebResponse.new(response) 
+      neb_qna(mTimeout)
 
     ensure
-      @client.close unless @client.nil?
+      @stomp_handler.stomp_disconnect if @stomp_handler
     end
 
 
     ##
     # ::call-seq::
-    #   request.send                    -> (NebResponse)
-    #   request.send(mTimeout)          -> (NebResponse)
-    #   request.send(mTimeout,cTimeout) -> (NebResponse)
+    #     request.send                    -> (Message)
+    #     request.send(mTimeout)          -> (Message)
+    #     request.send(mTimeout,cTimeout) -> (Message)
     #
-    # As send_nocache, but without not checking the cache :)
+    # As send_nocache, but without not using the cache :)
     #
     # Parameters:
     #  mTimeout  [Fixnum] Message timout in seconds - defaults to @mTimeout
@@ -212,41 +146,20 @@ module Nebulous
     def send(mTimeout=@mTimeout, cTimeout=@cTimeout)
       return send_no_cache(mTimeout) unless redis_on?
 
-      redis = nil
-      redis = RedisHandler::connect 
+      @redis_handler.connect unless @redis_handler.connected?
 
-      found = redis.get(@message)
-      return NebResponse.new(found) unless found.nil?
+      found = @redis_handler.get(@message.protocol_json)
+      return Message.from_cache(found) unless found.nil?
+
 
       # No answer in Redis -- ask Nebulous
       nebMess = send_no_cache(mTimeout)
-      redis.set( @message, nebMess.to_cache, ex: cTimeout ) 
+      @redis_handler.set(@message.protocol_json, nebMess.to_cache, ex: cTimeout)
 
-      return nebMess
+      nebMess
 
     ensure
-      redis.quit unless redis.nil?
-    end
-
-
-    ##
-    # :call-seq:
-    #   request.get_from_cache -> (String || nil)
-    #
-    # Try to get the response from the cache. Returns the cached response, or
-    # nil if not found
-    #
-    # *Send* doesn't use this because it wants the redis handle to set the cache
-    # afterwards. The primary use for this is testing, but, who knows what
-    # other use we might find.
-    #
-    def get_from_cache
-      redis = nil
-      redis = RedisHandler::connect 
-
-      return redis.get(@message)
-    ensure
-      redis.quit unless redis.nil?
+      @redis_handler.quit if @redis_handler
     end
 
 
@@ -257,29 +170,14 @@ module Nebulous
     # Clear the cache of responses to this request - just this request.
     #
     def clear_cache
-      redis = nil
-      redis = RedisHandler::connect 
+      @redis_handler.connect unless @redis_handler.connected?
 
-      redis.del(@message)
+      @redis_handler.del(@message.protocol_json)
 
-      return self
+      self
+
     ensure
-      redis.quit unless redis.nil?
-    end
-
-
-    ##
-    # :call-seq:
-    #   request.neb_connect -> self
-    #
-    # Connect to STOMP and do initial setup
-    # Called automatically by initialize, so probably useless to and end-user.
-    #
-    def neb_connect
-      @client ||= NebRequest.stomp_connect
-      @replyID = calc_replyID
-
-      return self
+      @redis_handler.quit if @redis_handler
     end
 
 
@@ -287,63 +185,48 @@ module Nebulous
     # :call-seq:
     #   request.redis_on? -> (boolean)
     #
-    # Return true if Redis is turned on in the config
+    # Return true if Redis is turned on in the *config*
+    #
+    # (If you want to know if we are conected to Redis, try
+    # `@redis_handler.connected?`)
     #
     def redis_on?
-      ! Param.get(:redisConnectHash).nil?
+      @redis_handler.redis_on?
     end
 
 
     private
 
+
+    ##
+    # Connect to STOMP etc and do initial setup
+    # Called automatically by initialize.
+    #
+    def neb_connect
+      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
+      @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
+
+      @stomp_handler.stomp_connect
+      @replyID = @stomp_handler.calc_reply_id
+      self
+    end
+
     
     ##
     # Send a message via STOMP and wait for a response
     #
-    def neb_qna(mTimeout)
-      headers = { "content-type" => "application/json",
-                  "neb-reply-to" => @responseQ,
-                  "neb-reply-id" => @replyID }
-                  
-      # Ensure the response queue exists
-      @client.publish( @responseQ, "boo" ) 
-
-      # Send the request
-      @client.publish(@requestQ, @message, headers)
-
-      # wait for the response
-      response = nil
-
-      NebRequest.with_timeout(mTimeout) do |x|
-
-        @client.subscribe( @responseQ, {ack: "client-individual"} ) do |msg|
-
-          if msg.body == "boo"
-            @client.ack(msg)
-
-          elsif msg.headers["neb-in-reply-to"] == @replyID
-            response = msg
-            @client.ack(msg)
-            x.signal
-          end
-
-        end
-
-      end # of with_timeout
-
-      # And, finally...
-      raise NebulousTimeout if response.nil?
-      return response
-
-    end # of neb_qna
-
-
-    ##
-    # Return the neb-reply-id we're going to use for this connection
-    # Return nil if we're not connected yet
+    # Note: this used to return a Stomp::Message, but now it returns a
+    # Nebulous::Message.
     #
-    def calc_replyID
-      @client.nil? ? nil : @client.connection_frame().headers["session"]
+    def neb_qna(mTimeout)
+      @stomp_handler.send_message(@requestQ, @message)
+
+      response = nil
+      @stomp_handler.listen_with_timeout(@responseQ, mTimeout) do |msg|
+        response = msg
+      end
+
+      response
     end
 
 

@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'nebulous/param'
 
 include Nebulous
 
@@ -8,6 +9,8 @@ describe Param do
   before do
     Param.set()
   end
+
+  after(:all) { Param.set_logger(nil) }
 
 
   describe "Param::set" do
@@ -29,6 +32,7 @@ describe Param do
     end
 
   end # of Param::set
+  ##
 
 
   describe "Param::add_target" do
@@ -56,6 +60,7 @@ describe Param do
 
 
   end # of Param:add_target
+  ##
 
 
   describe "Param::get" do
@@ -76,6 +81,7 @@ describe Param do
 
 
   end # of param::get
+  ##
 
 
   describe "Param::get_target" do
@@ -95,6 +101,33 @@ describe Param do
 
       
   end # of get_target
+  ##
+
+
+  describe "Param::get_logger" do
+
+    it "returns the logger instance" do
+      l = Logger.new(STDOUT)
+      Param.set_logger(l)
+
+      expect( Param.get_logger ).to eq l
+    end
+
+  end
+  ##
+
+
+  describe "Param.set_logger" do
+
+    it "requires an instance of Logger, or nil" do
+      expect{ Nebulous.set_logger(:foo) }.to raise_exception NebulousError
+
+      expect{ Nebulous.set_logger(nil) }.not_to raise_exception
+      expect{ Nebulous.set_logger( Logger.new(STDOUT) ) }.not_to raise_exception
+    end
+
+  end
+  ##
 
 
 end

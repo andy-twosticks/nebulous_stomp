@@ -1,5 +1,8 @@
---require spec_helper
 --color
---fail-fast
+--require spec_helper
+#--require doc_no_pending
+--require nebulous
+-I .
 
+#--fail-fast
 #--format documentation

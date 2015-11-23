@@ -2,239 +2,175 @@ require 'spec_helper'
 
 include Nebulous
 
+require 'nebulous/nebrequest'
+require 'nebulous/message'
+require 'nebulous/stomp_handler_null'
+require 'nebulous/redis_handler_null'
+
+require 'pry' 
+
 
 describe NebRequest do
 
+  let(:stomp_hash) do
+    { hosts: [{ login:    'guest',
+                passcode: 'guest',
+                host:     '10.0.0.150',
+                port:     61613,
+                ssl:      false }],
+      reliable: false }
+
+  end
+
+  let(:redis_hash) { {host: '127.0.0.1', port: 6379, db: 0} }
+
+  let(:stomp_h) { StompHandlerNull.new(stomp_hash) }
+  let(:redis_h) { RedisHandlerNull.new(redis_hash) }
+
+  def new_request(target, verb, params=nil, desc=nil)
+    NebRequest.new(target, verb, params, desc, stomp_h, redis_h)
+  end
+
   before do
-    @stomph = { hosts: [{ login:    'guest',
-                         passcode: 'guest',
-                         host:     '10.0.0.150',
-                         port:     61613,
-                         ssl:      false }],
-               reliable: false }
-
-    @redish = { host: '127.0.0.1',
-                port: 6379,
-                db:   0 }
-
-    # The message that "stomp" returns to Nebulous. This has to be a real
-    # Stomp::Message because (we assume) NebResponse uses class to tell what is
-    # has been passed. Luckily it takes an actual frame; that seems unlikely to
-    # change soon and is fairly stable for testing.
-    # Note that we leave a %s here for the reply-to field...
-    @msg = [ 'MESSAGE',
-             'destination:/queue/foo',
-             'message-id:999',
-             'neb-in-reply-to:%s',
-             '',
-             'Foo' ].join("\n") + "\0"
-
     Nebulous.init( :stompConnectHash => @stomph, 
                    :redisConnectHash => @redish,
                    :messageTimeout   => 5,
                    :cacheTimeout     => 20 )
 
     Nebulous.add_target( :accord, 
-                         :sendQueue      => "/queue/laplace.in",
+                         :sendQueue      => "/queue/laplace.dev",
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
 
-    # Wipe the whole darned Redis cache before every test.
-    r = RedisHandler.connect
-    r.flushall
-    r.quit
   end
 
 
   describe "#initialize" do
 
     it "raises an exception for a bad target" do
-      expect{ NebRequest.new('badtarget', 'foo') }.to \
-          raise_exception(NebulousError)
+      expect{ new_request('badtarget', 'foo') }.
+        to raise_exception(NebulousError)
 
     end
 
     it "takes the timeout on the target over the default" do
-      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(1)
+      expect( new_request('accord', 'foo').mTimeout ).to eq(1)
     end
 
     it "falls back to the default if the timeout on the target is not set" do
-      Nebulous.init( :stompConnectHash => @stomph, 
-                     :redisConnectHash => @redish,
-                     :messageTimeout   => 5,
-                     :cacheTimeout     => 20 )
-
-      Nebulous.add_target( :accord, 
-                           :sendQueue      => "/queue/laplace.in",
+      Nebulous.add_target( :dracula, 
+                           :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
-      expect( NebRequest.new('accord', 'foo').mTimeout ).to eq(5)
+      expect( new_request('dracula', 'foo').mTimeout ).to eq(5)
     end
       
-
   end
+  ##
 
 
-  context "if Nebulous gets no response" do
-    before do
-      # here we send an actual STOMP request to a non-existant target
-      Param.add_target(:dummy, :sendQueue => "foo", :receiveQueue => "foo")
-    end
+  describe "#clear_cache" do
 
+    it "removes the redis cache for a single request" do
+      redis_h.insert_fake('foo', 'bar')
+      expect( redis_h ).to receive(:del).with( {"verb"=>"foo"}.to_json )
 
-    describe "#send_no_cache" do
-
-      it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo').send_no_cache }.to \
-            raise_exception(NebulousTimeout)
-
-      end
-    end
-
-    describe "#send" do
-
-      it "returns a NebulousTimeout" do
-        expect{ NebRequest.new('dummy', 'foo').send }.to \
-            raise_exception(NebulousTimeout)
-
-      end
+      new_request('accord', 'foo').clear_cache
     end
 
   end
+  ##
 
 
-  context "if Nebulous gets a response" do
-    before do
-      # mock the whole STOMP process ... eek...
-      @client = instance_double( Stomp::Client, 
-                                 :close   => nil,
-                                 :publish => nil,
-                                 :'open?' => true )
+  describe "#send_no_cache" do
 
-      # We assume Nebulous wants session ID to make the replyID somehow
-      # ...it doesn't have to; we don't enforce that.
-      allow(@client).to receive_message_chain("connection_frame.headers").
-          and_return({"session" => "123"})
+    it "returns something from STOMP" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+      response = request.send_no_cache
+
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('foo')
+    end
+
+    it 'returns a nebulous timeout if there is no response' do
+      request = new_request('accord', 'foo')
+      expect{ request.send_no_cache }.
+        to raise_exception Nebulous::NebulousTimeout
 
     end
 
-
-    describe "#send_no_cache" do
-
-      it "returns a NebResponse object" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
-
-        response = request.send_no_cache
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
-      end
-
-      # I have no idea how to actual check that it *honours* the timeout...
-      it "allows you to specify a message timeout" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        allow(@client).to receive(:subscribe).and_yield(msg)
-
-        expect{ response = request.send_no_cache(3) }.not_to raise_exception
-      end
-
-    end #send_no_cache
+  end
+  ##
 
 
-    describe "#send" do
-      it "returns a NebResponse object from STOMP the first time" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
+  describe "#send" do
 
-        response = request.send
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
-      end
+    it "returns a Message object from STOMP the first time" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
 
-      it "returns the answer from the cache the second time" do
-
-        # First time
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        expect(@client).to receive(:subscribe).and_yield(msg)
-
-        response = request.send
-
-
-        # Second time
-        # Note, we actually need the Redis server to be up for this test to
-        # work!
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-
-        expect(@client).not_to receive(:subscribe)
-
-        response = request.send
-        expect( response ).to be_a NebResponse
-        expect( response.body ).to eq('Foo')
-      end
-
-      it "allows you to specify a message timeout & cache timeout" do
-        request = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % request.replyID )
-        allow(@client).to receive(:subscribe).and_yield(msg)
-
-        expect{ response = request.send(3) }.not_to raise_exception
-        expect{ response = request.send(3, 120) }.not_to raise_exception
-      end
-
-    end # #send
-
-
-    describe "#get_from_cache" do
-
-      it "returns nil if there is no cached value" do
-        req = NebRequest.new('accord', 'foo', nil, nil, @client)
-        
-        expect( req.get_from_cache ).to eq nil
-      end
-
-      it "returns the cached value if there is one" do
-        req = NebRequest.new('accord', 'foo', nil, nil, @client)
-        msg = Stomp::Message.new( @msg % req.replyID )
-        allow(@client).to receive(:subscribe).and_yield(msg)
-
-        req.send
-        expect( req.get_from_cache ).not_to eq nil
-      end
-
-
-    end
-          
-
-    describe "#clear_cache" do
-      before do
-        msg  = [ 'foo', 'bar' ]
-        @req = []
-
-        2.times do
-          r = NebRequest.new('accord', msg.shift, nil, nil, @client)
-          m = Stomp::Message.new( @msg % r.replyID )
-          allow(@client).to receive(:subscribe).and_yield(m)
-          r.send
-          @req << r
-        end
-      end
-
-      it "removes the redis cache for a single request" do
-        expect( @req[0].get_from_cache ).not_to eq nil
-        expect( @req[1].get_from_cache ).not_to eq nil
-
-        @req[0].clear_cache
-        expect( @req[0].get_from_cache ).to eq nil
-        expect( @req[1].get_from_cache ).not_to eq nil
-      end
-
+      response = request.send
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('foo')
     end
 
-  end # context "gets a response"
+    it "returns the answer from the cache the second time" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      redis_h.insert_fake('xxx', {'verb' => 'frog'}.to_json)
+
+      # First time
+      request = new_request('accord', 'foo')
+      response = request.send
+
+      # Second time
+      request = new_request('accord', 'foo')
+      response = request.send
+
+      expect( response ).to be_a Nebulous::Message
+      expect( response.verb ).to eq('frog')
+    end
+
+    it "allows you to specify a message timeout" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+
+      expect{ request.send(3) }.not_to raise_exception
+    end
+
+    it "allows you to specify a message timeout & cache timeout" do
+      stomp_h.insert_fake('foo', 'bar', 'baz')
+      request = new_request('accord', 'foo')
+
+      expect{ request.send(3, 120) }.not_to raise_exception
+    end
+
+    it 'returns a nebulous timeout if there is no response' do
+      request = new_request('accord', 'foo')
+      expect{ request.send }.to raise_exception Nebulous::NebulousTimeout
+    end
+
+  end 
+  ##
+
+
+  describe '#redis_on?' do
+
+    it 'is true if there is a redis connection hash' do
+      request = new_request('accord', 'foo')
+      expect( request.redis_on? ).to be_truthy
+    end
+
+    it 'is false if there is no redis connection hash' do
+      # make a temporary RedisHandlerNull with no connection hash and use that
+      # to make a request object
+      rh = RedisHandlerNull.new
+      r = NebRequest.new('accord', 'foo', nil, nil, stomp_h, rh)
+
+      expect( r.redis_on? ).to be_falsy
+    end
+
+  end
 
 end # of NebRequest
 
