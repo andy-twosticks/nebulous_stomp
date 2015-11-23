@@ -80,7 +80,6 @@ module Nebulous
   ##
   # Set an instance of Logger to log stuff to.
   def self.set_logger(logger)
-    raise NebulousError unless logger.kind_of(Logger)
     Param.set_logger(logger)
   end
 

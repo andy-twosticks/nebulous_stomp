@@ -10,6 +10,8 @@ describe Param do
     Param.set()
   end
 
+  after(:all) { Param.set_logger(nil) }
+
 
   describe "Param::set" do
 
@@ -109,6 +111,19 @@ describe Param do
       Param.set_logger(l)
 
       expect( Param.get_logger ).to eq l
+    end
+
+  end
+  ##
+
+
+  describe "Param.set_logger" do
+
+    it "requires an instance of Logger, or nil" do
+      expect{ Nebulous.set_logger(:foo) }.to raise_exception NebulousError
+
+      expect{ Nebulous.set_logger(nil) }.not_to raise_exception
+      expect{ Nebulous.set_logger( Logger.new(STDOUT) ) }.not_to raise_exception
     end
 
   end

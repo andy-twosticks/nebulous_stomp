@@ -72,6 +72,7 @@ module Nebulous
     # Set a logger instance
     #
     def set_logger(lg)
+      raise NebulousError unless lg.kind_of?(Logger) || lg.nil?
       @logger = lg
     end
 

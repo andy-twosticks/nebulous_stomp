@@ -2,12 +2,16 @@ require 'spec_helper'
 
 require 'logger'
 
+require 'nebulous/param'
+
 
 describe Nebulous do
 
-  after do
-    Param.set_logger(nil)
-  end
+  after(:all) { Param.set_logger(nil) }
+
+
+  # Magically replaces the real Param module
+  let(:param) { class_double(Nebulous::Param).as_stubbed_const }
 
 
   it 'has a version number' do
@@ -18,10 +22,10 @@ describe Nebulous do
 
   describe "Nebulous.set_logger" do
 
-    it "requires an instance of Logger" do
-      expect{ Nebulous.set_logger(:foo) }.to raise_exception NebulousError
-      expect{ Nebulous.set_logger(nil) }.to raise_exception NebulousError
-      expect{ Nebulous.set_logger( Logger.new(STDOUT) ) }.not_to raise_exception
+    it "calls Param.set_logger" do
+      l = Logger.new(STDOUT)
+      expect(param).to receive(:set_logger).with(l)
+      Nebulous.set_logger(l)
     end
 
   end
@@ -30,7 +34,7 @@ describe Nebulous do
 
   describe 'Nebulous.logger' do
 
-    it 'returns the logger as set by Param' do
+    it 'returns the logger as set' do
       l = Logger.new(STDOUT)
       Nebulous.set_logger(l)
 
@@ -46,11 +50,28 @@ describe Nebulous do
   ##
   
 
-=begin
-  # BAMF
-  Nebulous.ini
-  Nebulous.add_target
-=end
+  describe 'Nebulous.init' do
+
+    it 'calls Param.set' do
+      h = {one: 1, two: 2}
+      expect(param).to receive(:set).with(h)
+      Nebulous.init(h)
+    end
+
+  end
+  ##
+
+
+  describe 'Nebulous.add_target' do
+
+    it 'calls Param.add_target' do
+      t1 = :foo; t2 = {bar: 'baz'}
+      expect(param).to receive(:add_target).with(t1, t2)
+      Nebulous.add_target(t1, t2)
+    end
+
+  end
+  ##
 
 end
 
