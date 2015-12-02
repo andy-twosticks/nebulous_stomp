@@ -122,6 +122,15 @@ module Nebulous
     end
 
 
+    ##
+    # reset all parameters -- probably only useful for testing
+    #
+    def reset
+      @params = {}
+      @logger = nil
+    end
+
+
   end
 end
 

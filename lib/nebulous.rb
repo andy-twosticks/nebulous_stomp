@@ -37,6 +37,7 @@ require 'nebulous/param'
 #   * Nebulous
 #   * Nebulous::Param
 #   * Nebulous::NebRequest
+#   * Nebulous::NebRequestNull
 #   * Nebulous::Message
 #   * Nebulous::StompHandler
 #   * Nebulous::StompHandlerNull
@@ -102,6 +103,30 @@ module Nebulous
   #
   def self.logger
     Param.get_logger || Logger.new( DevNull.new )
+  end
+
+
+  ##
+  # :call-seq:
+  #     Nebulous.on? -> Boolean
+  #
+  # True if Nebulous is configured to be running
+  #
+  def self.on?
+    h = Param.get(:stompConnectHash)
+    !(h.nil? || h.empty?)
+  end
+
+
+  ##
+  # :call-seq:
+  #     Nebulous.redis_on? -> Boolean
+  #
+  # True if the Redis cache is configured to be running
+  #
+  def self.redis_on?
+    h = Param.get(:redisConnectHash)
+    !(h.nil? || h.empty?)
   end
 
 
