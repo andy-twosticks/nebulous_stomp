@@ -191,6 +191,28 @@ describe StompHandler do
       expect( handler ).to be_connected
     end
 
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      sh = StompHandler.new({})
+      expect{ sh.stomp_connect }.not_to raise_exception
+      expect( sh.stomp_connect ).to eq sh
+    end
+
+  end
+  ##
+
+  
+  describe '#nebulous_on?' do
+
+    it 'should be true if there is anything in the stomp hash' do
+      sh = StompHandler.new(foo: 'bar')
+      expect( sh.nebulous_on? ).to be_truthy
+    end
+
+    it 'should be false if the stomp hash is nil' do
+      sh = StompHandler.new(nil)
+      expect( sh.nebulous_on? ).to be_falsy
+    end
+
   end
   ##
 
@@ -201,6 +223,12 @@ describe StompHandler do
       handler.stomp_disconnect
 
       expect( handler ).not_to be_connected
+    end
+
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      sh = StompHandler.new({}).stomp_connect
+      expect{ sh.stomp_disconnect }.not_to raise_exception
+      expect( sh.stomp_disconnect ).to eq sh
     end
 
   end
@@ -217,13 +245,19 @@ describe StompHandler do
 
     end
 
-
     it "returns a unique string" do
       # I can't actually check that the string is unique, so this is kinda weak
       handler.stomp_connect
       expect( handler.calc_reply_id ).to respond_to :upcase
       expect( handler.calc_reply_id.size ).to be > 12
     end
+
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      sh = StompHandler.new({}).stomp_connect
+      expect{ sh.calc_reply_id }.not_to raise_exception
+      expect( sh.calc_reply_id ).to eq nil
+    end
+
   end
   ##
 
@@ -264,6 +298,13 @@ describe StompHandler do
       handler.send_message('foo', mess)
       expect{ handler.send_message('foo', mess) }.not_to raise_exception
     end
+
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      sh = StompHandler.new({}).stomp_connect
+      expect{ sh.send_message('foo', mess) }.not_to raise_exception
+      expect( sh.send_message('foo', mess) ).to eq nil
+    end
+
 
   end
   ##
@@ -314,6 +355,13 @@ describe StompHandler do
       expect(gotMessage).to be_a_kind_of Nebulous::Message
       expect( gotMessage.verb ).to eq 'Bar'
     end
+
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      sh = StompHandler.new({}).stomp_connect
+      expect{ sh.listen('/queue/x') }.not_to raise_exception
+      expect{|y| sh.listen('/queue/x', &y) }.not_to yield_control
+    end
+
 
   end
   ##
@@ -379,6 +427,14 @@ describe StompHandler do
 
     it "raises NebulousTimeout after a timeout" do
       expect{ run_listen_with_timeout(1) }.to raise_exception NebulousTimeout
+    end
+
+    it 'doesn''t freak out if Nebulous is not "on"'do
+      sh = StompHandler.new({}).stomp_connect
+      expect{ sh.listen_with_timeout('/queue/x', 1) }.not_to raise_exception
+      expect{|y| sh.listen_with_timeout('/queue/x', 1, &y) }.
+        not_to yield_control
+
     end
 
 

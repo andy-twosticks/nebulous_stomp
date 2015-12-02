@@ -87,6 +87,7 @@ describe RedisHandler do
 
     it 'is true if we were passed any connection hash at all' do
       expect( RedisHandler.new(nil).redis_on? ).to be_falsy
+      expect( RedisHandler.new({}).redis_on? ).to be_falsy
 
       expect( handler.redis_on? ).to be_truthy
     end

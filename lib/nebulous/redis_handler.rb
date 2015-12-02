@@ -78,7 +78,7 @@ module Nebulous
     # detail.
     #
     def redis_on?
-      !@redis_hash.nil?
+      @redis_hash && !@redis_hash.empty?
     end
 
 

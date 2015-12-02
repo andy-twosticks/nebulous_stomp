@@ -2,15 +2,32 @@ require 'spec_helper'
 
 include Nebulous
 
-require 'nebulous/nebrequest'
+require 'nebulous/nebrequest_null'
+
 require 'nebulous/message'
-require 'nebulous/stomp_handler_null'
-require 'nebulous/redis_handler_null'
+#require 'nebulous/stomp_handler_null'
+#require 'nebulous/redis_handler_null'
 
 require 'pry' 
 
 
-describe NebRequest do
+describe NebRequestNull do
+
+  def new_request(target, verb, params=nil, desc=nil)
+    NebRequestNull.new(target, verb, params, desc)
+  end
+
+  def disable(thing)
+    Nebulous.init( :stompConnectHash => thing == :stomp ? {} : stomp_hash,
+                   :redisConnectHash => thing == :redis ? {} : redis_hash,
+                   :messageTimeout   => 5,
+                   :cacheTimeout     => 20 )
+
+    Nebulous.add_target( :accord, 
+                         :sendQueue      => "/queue/laplace.dev",
+                         :receiveQueue   => "/queue/laplace.out",
+                         :messageTimeout => 1 )
+  end
 
   let(:stomp_hash) do
     { hosts: [{ login:    'guest',
@@ -24,24 +41,8 @@ describe NebRequest do
 
   let(:redis_hash) { {host: '127.0.0.1', port: 6379, db: 0} }
 
-  let(:stomp_h) { StompHandlerNull.new(stomp_hash) }
-  let(:redis_h) { RedisHandlerNull.new(redis_hash) }
-
-  def new_request(target, verb, params=nil, desc=nil)
-    NebRequest.new(target, verb, params, desc, stomp_h, redis_h)
-  end
-
   before do
-    Nebulous.init( :stompConnectHash => @stomph, 
-                   :redisConnectHash => @redish,
-                   :messageTimeout   => 5,
-                   :cacheTimeout     => 20 )
-
-    Nebulous.add_target( :accord, 
-                         :sendQueue      => "/queue/laplace.dev",
-                         :receiveQueue   => "/queue/laplace.out",
-                         :messageTimeout => 1 )
-
+    disable(:nothing)
   end
 
 
@@ -65,10 +66,9 @@ describe NebRequest do
       expect( new_request('dracula', 'foo').mTimeout ).to eq(5)
     end
 
-    it 'doesn\'t freak out if Nebulous is not "on"' do
-      sh = StompHandlerNull.new({})
-
-      expect{ NebRequest.new('accord','foo',nil,nil,sh,redis_h) }.
+    it 'doesn''t freak out if Nebulous is not "on"' do
+      disable(:stomp)
+      expect{ NebRequestNull.new('accord', 'foo', nil, nil) }.
         not_to raise_exception
 
     end
@@ -79,21 +79,14 @@ describe NebRequest do
 
   describe "#clear_cache" do
 
-    it "removes the redis cache for a single request" do
-      redis_h.insert_fake('foo', 'bar')
-      expect( redis_h ).to receive(:del).with( {"verb"=>"foo"}.to_json )
-
-      new_request('accord', 'foo').clear_cache
-    end
-
     it 'returns self' do
       r = new_request('accord', 'foo')
       expect( r.clear_cache ).to eq r
     end
 
-    it 'doesn\'t freak out if Redis is not connected' do
-      rh = RedisHandlerNull.new({})
-      r = NebRequest.new( 'accord', 'foo', nil, nil, stomp_h, rh)
+    it 'doesn''t freak out if Redis is not connected' do
+      disable(:redis)
+      r = NebRequestNull.new( 'accord', 'foo', nil, nil)
 
       expect{ r.clear_cache }.not_to raise_exception
       expect( r.clear_cache ).to eq r
@@ -106,8 +99,8 @@ describe NebRequest do
   describe "#send_no_cache" do
 
     it "returns something from STOMP" do
-      stomp_h.insert_fake('foo', 'bar', 'baz')
       request = new_request('accord', 'foo')
+      request.insert_fake_stomp('foo', 'bar', 'baz')
       response = request.send_no_cache
 
       expect( response ).to be_a Nebulous::Message
@@ -122,8 +115,8 @@ describe NebRequest do
     end
 
     it 'returns nil if Nebulous is disabled in the config' do
-      sh = StompHandlerNull.new({})
-      r = NebRequest.new('accord', 'foo', nil, nil, sh, redis_h)
+      disable(:stomp)
+      r = new_request('accord', 'foo')
 
       expect( r.send_no_cache ).to eq nil
     end
@@ -135,24 +128,18 @@ describe NebRequest do
   describe "#send" do
 
     it "returns a Message object from STOMP the first time" do
-      stomp_h.insert_fake('foo', 'bar', 'baz')
       request = new_request('accord', 'foo')
+      request.insert_fake_stomp('foo', 'bar', 'baz')
 
       response = request.send
       expect( response ).to be_a Nebulous::Message
       expect( response.verb ).to eq('foo')
     end
 
-    it "returns the answer from the cache the second time" do
-      stomp_h.insert_fake('foo', 'bar', 'baz')
-      redis_h.insert_fake('xxx', {'verb' => 'frog'}.to_json)
-
-      # First time
+    it "returns the answer from the cache if there is one" do
       request = new_request('accord', 'foo')
-      response = request.send
-
-      # Second time
-      request = new_request('accord', 'foo')
+      request.insert_fake_stomp('foo', 'bar', 'baz')
+      request.insert_fake_redis('xxx', {'verb' => 'frog'}.to_json)
       response = request.send
 
       expect( response ).to be_a Nebulous::Message
@@ -160,15 +147,15 @@ describe NebRequest do
     end
 
     it "allows you to specify a message timeout" do
-      stomp_h.insert_fake('foo', 'bar', 'baz')
       request = new_request('accord', 'foo')
+      request.insert_fake_stomp('foo', 'bar', 'baz')
 
       expect{ request.send(3) }.not_to raise_exception
     end
 
     it "allows you to specify a message timeout & cache timeout" do
-      stomp_h.insert_fake('foo', 'bar', 'baz')
       request = new_request('accord', 'foo')
+      request.insert_fake_stomp('foo', 'bar', 'baz')
 
       expect{ request.send(3, 120) }.not_to raise_exception
     end
@@ -179,9 +166,9 @@ describe NebRequest do
     end
 
     it 'still works if Redis is turned off in the config' do
-      rh = RedisHandlerNull.new({})
-      stomp_h.insert_fake('foo', 'bar', 'baz')
-      r = NebRequest.new('accord', 'tom', nil, nil, stomp_h, rh)
+      disable(:redis)
+      r = new_request('accord', 'tom')
+      r.insert_fake_stomp('foo', 'bar', 'baz')
 
       response = r.send
       expect( response ).to be_a Nebulous::Message
@@ -189,8 +176,8 @@ describe NebRequest do
     end
 
     it 'returns nil if Nebulous is disabled in the config' do
-      sh = StompHandlerNull.new({})
-      r = NebRequest.new('accord', 'foo', nil, nil, sh, redis_h)
+      disable(:stomp)
+      r = new_request('accord', 'foo')
 
       expect( r.send ).to eq nil
     end
@@ -207,9 +194,8 @@ describe NebRequest do
     end
 
     it 'is false if there is no redis connection hash' do
-      rh = RedisHandlerNull.new({})
-      r = NebRequest.new('accord', 'foo', nil, nil, stomp_h, rh)
-
+      disable(:redis)
+      r = new_request('accord', 'foo')
       expect( r.redis_on? ).to be_falsy
     end
 
@@ -220,22 +206,18 @@ describe NebRequest do
   describe '#nebulous_on?' do
 
     it 'is true if there is a nebulous connection hash' do
-      sh = StompHandlerNull.new({foo: 'bar'})
-      r = NebRequest.new('accord', 'foo', nil, nil, sh, redis_h)
-
+      r = new_request('accord', 'foo')
       expect( r.nebulous_on? ).to be_truthy
     end
 
     it 'is false if there is no nebulous connection hash' do
-      sh = StompHandlerNull.new({})
-      r = NebRequest.new('accord', 'foo', nil, nil, sh, redis_h)
-
+      disable(:stomp)
+      r = new_request('accord', 'foo')
       expect( r.nebulous_on? ).to be_falsy
     end
 
   end
   ##
 
-
-end # of NebRequest
+end # of NebRequestNull
 

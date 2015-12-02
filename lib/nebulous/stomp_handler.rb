@@ -122,6 +122,7 @@ module Nebulous
     # Connect to the STOMP client.
     #
     def stomp_connect
+      return self unless nebulous_on?
       Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = @test_client || Stomp::Client.new( @stomp_hash )
@@ -162,6 +163,14 @@ module Nebulous
 
 
     ##
+    # return true if Nebulous is turned on in the parameters
+    #
+    def nebulous_on?
+      @stomp_hash && !@stomp_hash.empty?
+    end
+
+
+    ##
     # Block for incoming messages on a queue.  Yield each message.
     #
     # Note that the blocking happens in a thread somewhere inside the STOMP
@@ -173,6 +182,7 @@ module Nebulous
     #     loop; sleep 5; end
     #
     def listen(queue)
+      return unless nebulous_on?
       Nebulous.logger.info(__FILE__) {"Subscribing to #{queue}"}
 
       stomp_connect unless @client
@@ -206,6 +216,8 @@ module Nebulous
     #++
     #
     def listen_with_timeout(queue, timeout)
+      return unless nebulous_on?
+
       Nebulous.logger.info(__FILE__) do
         "Subscribing to #{queue} with timeout #{timeout}"
       end
@@ -217,8 +229,6 @@ module Nebulous
       done = false
 
       StompHandler.with_timeout(timeout) do |resource|
-        #done = false bamf
-
         @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
 
           begin
@@ -232,11 +242,12 @@ module Nebulous
             Nebulous.logger.error(__FILE__) {"Error during polling: #{e}" }
           end
 
-        end
+        end # of Stomp client subscribe block
 
         # Not that this seems to do any good when the Stomp gem is in play, but.
         resource.signal if done
-      end 
+
+      end # of with_timeout
 
       raise NebulousTimeout unless done
     end
@@ -246,6 +257,7 @@ module Nebulous
     # Send a Message to a queue; return the message.
     #
     def send_message(queue, mess)
+      return nil unless nebulous_on?
       raise Nebulous::NebulousError, "That's not a Message" \
         unless mess.respond_to?(:body_for_stomp) \
             && mess.respond_to?(:headers_for_stomp)
@@ -260,6 +272,7 @@ module Nebulous
     # Return the neb-reply-id we're going to use for this connection
     #
     def calc_reply_id
+      return nil unless nebulous_on?
       raise ConnectionError, "Client not connected" unless @client
 
       @client.connection_frame().headers["session"] \
