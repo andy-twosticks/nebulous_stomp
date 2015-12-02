@@ -20,7 +20,7 @@ module Nebulous
     attr_reader :fake_pair
 
 
-    def initialize(connectHash=nil)
+    def initialize(connectHash={})
       super
       @fake_pair = {}
     end

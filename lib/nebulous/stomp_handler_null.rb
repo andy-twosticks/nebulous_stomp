@@ -20,7 +20,7 @@ module Nebulous
     attr_reader :fake_mess
 
 
-    def initialize(hash=nil)
+    def initialize(hash={})
       super(hash)
       @fake_mess = nil
     end

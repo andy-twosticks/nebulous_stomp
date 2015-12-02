@@ -76,25 +76,23 @@ module Nebulous
 
       Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
-      # The target name -- should point to data in the parameter hash
-      @target = target                           
-
-      targetHash = Param.get_target(@target)
-      raise NebulousError, "Unknown target #{target}" if targetHash.nil?
-
-      @verb, @params, @desc = verb, params, desc 
-
-      @cTimeout  = Param.get(:cacheTimeout)
-      @requestQ  = targetHash[:sendQueue]
-      @responseQ = targetHash[:receiveQueue]
-      @message   = Message.from_parts(@responseQ, nil, verb, params, desc)
-      @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
+      @target        = target                           
+      @verb          = verb
+      @params        = params
+      @desc          = desc 
       @stomp_handler = stompHandler 
       @redis_handler = redisHandler 
+      @requestQ      = nil
+      @responseQ     = nil
+      @message       = nil
       @replyID       = nil
+      @mTimeout      = 0
+      @cTimeout      = 0
 
-      # Now we connect and set @replyID 
-      neb_connect
+      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
+      @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
+
+      neb_connect if nebulous_on?
     end
 
 
@@ -114,6 +112,7 @@ module Nebulous
     # check the cache; it also doesn't update it.
     #
     def send_no_cache(mTimeout=@mTimeout)
+      return nil unless nebulous_on?
 
       # If we've lost the connection then reconnect but *keep replyID*
       @stomp_handler.stomp_connect unless @stomp_handler.connected?
@@ -144,13 +143,13 @@ module Nebulous
     # to crack a nut, but it certainly makes things very simple.
     #
     def send(mTimeout=@mTimeout, cTimeout=@cTimeout)
+      return nil unless nebulous_on?
       return send_no_cache(mTimeout) unless redis_on?
 
       @redis_handler.connect unless @redis_handler.connected?
 
       found = @redis_handler.get(@message.protocol_json)
       return Message.from_cache(found) unless found.nil?
-
 
       # No answer in Redis -- ask Nebulous
       nebMess = send_no_cache(mTimeout)
@@ -170,8 +169,8 @@ module Nebulous
     # Clear the cache of responses to this request - just this request.
     #
     def clear_cache
+      return self unless redis_on?
       @redis_handler.connect unless @redis_handler.connected?
-
       @redis_handler.del(@message.protocol_json)
 
       self
@@ -191,7 +190,18 @@ module Nebulous
     # `@redis_handler.connected?`)
     #
     def redis_on?
-      @redis_handler.redis_on?
+      @redis_handler && @redis_handler.redis_on?
+    end
+
+
+    ##
+    # :call-seq:
+    #   request.nebulous_on? -> (boolean)
+    #
+    # Return true if Nebulous is turned on in the *config*
+    #
+    def nebulous_on?
+      @stomp_handler && @stomp_handler.nebulous_on?
     end
 
 
@@ -200,14 +210,21 @@ module Nebulous
 
     ##
     # Connect to STOMP etc and do initial setup
-    # Called automatically by initialize.
+    # Called automatically by initialize, if Nebulous is 'on' in the config.
     #
     def neb_connect
-      @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
-      @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
+      targetHash = Param.get_target(@target)
+      raise NebulousError, "Unknown target #{target}" if targetHash.nil?
+
+      @cTimeout  = Param.get(:cacheTimeout)
+      @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
+      @requestQ  = targetHash[:sendQueue]
+      @responseQ = targetHash[:receiveQueue]
+      @message   = Message.from_parts(@responseQ, nil, verb, params, desc)
 
       @stomp_handler.stomp_connect
       @replyID = @stomp_handler.calc_reply_id
+
       self
     end
 
