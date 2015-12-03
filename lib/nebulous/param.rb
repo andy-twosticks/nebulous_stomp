@@ -63,6 +63,7 @@ module Nebulous
       raise NebulousError, "Config Problem - Target missing 'receive'" \
         if t[:receiveQueue].nil?
 
+      @params ||= ParamDefaults
       @params[:targets][n.to_sym] = TargetDefaults.merge(t)
     end
 
@@ -95,6 +96,7 @@ module Nebulous
     # Get a the value of the parameter with the key p.
     #
     def get(p)
+      @params ||= ParamDefaults
       @params[p.to_sym]
     end
 
@@ -103,8 +105,9 @@ module Nebulous
     # Given a target name, return the corresponding target hash 
     #
     def get_target(name)
-      name = name.to_sym
-      x = @params[:targets][name]
+      t = Param.get(:targets)
+      x = (t && t.kind_of?(Hash)) ? t[name.to_sym] : nil
+
       raise NebulousError, "Config problem - unknown target #{name}" if x.nil?
       return x
     end
@@ -126,7 +129,7 @@ module Nebulous
     # reset all parameters -- probably only useful for testing
     #
     def reset
-      @params = {}
+      @params = nil
       @logger = nil
     end
 

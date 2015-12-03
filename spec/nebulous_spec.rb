@@ -7,6 +7,7 @@ require 'nebulous/param'
 
 describe Nebulous do
 
+  before      { Nebulous::Param.reset }
   after(:all) { Nebulous::Param.reset }
 
 
@@ -90,7 +91,6 @@ describe Nebulous do
         and_return( nil, {} )
 
       expect( Nebulous.on? ).to be_falsy
-      expect( Nebulous.on? ).to be_falsy
     end
 
 
@@ -113,7 +113,6 @@ describe Nebulous do
         with(:redisConnectHash).
         and_return( nil, {} )
 
-      expect( Nebulous.redis_on? ).to be_falsy
       expect( Nebulous.redis_on? ).to be_falsy
     end
 
