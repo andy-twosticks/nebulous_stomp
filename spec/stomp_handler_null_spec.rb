@@ -46,7 +46,7 @@ describe StompHandlerNull do
   describe '#insert_fake' do
 
     it 'sets the message to send' do
-      handler.insert_fake('foo', 'bar', 'baz')
+      handler.insert_fake( Message.from_parts('', '','foo', 'bar', 'baz') )
       expect( handler.fake_mess ).to be_a_kind_of Nebulous::Message
       expect( handler.fake_mess.verb ).to eq 'foo'
     end
@@ -62,7 +62,7 @@ describe StompHandlerNull do
     end
 
     it 'returns true if fake_message was called' do
-      handler.insert_fake('one', 'two', 'three')
+      handler.insert_fake( Message.from_parts('','', 'one', 'two', 'three') )
       expect( handler.connected? ).to be_truthy
     end
 
@@ -121,7 +121,7 @@ describe StompHandlerNull do
 
 
     it "yields a Message" do
-      handler.insert_fake('foo', 'bar', 'baz')
+      handler.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       gotMessage = run_listen(1)
 
       expect(gotMessage).not_to be_nil
@@ -146,7 +146,7 @@ describe StompHandlerNull do
     context "when there is a message" do
 
       it "yields a Message" do
-        handler.insert_fake('foo', 'bar', 'baz')
+        handler.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
         gotMessage = run_listen_with_timeout(1)
 
         expect( gotMessage ).not_to be_nil

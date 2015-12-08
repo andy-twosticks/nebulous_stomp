@@ -99,9 +99,9 @@ describe NebRequestNull do
   describe "#send_no_cache" do
 
     it "returns something from STOMP" do
-      request = new_request('accord', 'foo')
-      request.insert_fake_stomp('foo', 'bar', 'baz')
-      response = request.send_no_cache
+      req = new_request('accord', 'foo')
+      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      response = req.send_no_cache
 
       expect( response ).to be_a Nebulous::Message
       expect( response.verb ).to eq('foo')
@@ -128,47 +128,47 @@ describe NebRequestNull do
   describe "#send" do
 
     it "returns a Message object from STOMP the first time" do
-      request = new_request('accord', 'foo')
-      request.insert_fake_stomp('foo', 'bar', 'baz')
+      req = new_request('accord', 'foo')
+      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
-      response = request.send
+      response = req.send
       expect( response ).to be_a Nebulous::Message
       expect( response.verb ).to eq('foo')
     end
 
     it "returns the answer from the cache if there is one" do
-      request = new_request('accord', 'foo')
-      request.insert_fake_stomp('foo', 'bar', 'baz')
-      request.insert_fake_redis('xxx', {'verb' => 'frog'}.to_json)
-      response = request.send
+      req = new_request('accord', 'foo')
+      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_redis('xxx', {'verb' => 'frog'}.to_json)
+      response = req.send
 
       expect( response ).to be_a Nebulous::Message
       expect( response.verb ).to eq('frog')
     end
 
     it "allows you to specify a message timeout" do
-      request = new_request('accord', 'foo')
-      request.insert_fake_stomp('foo', 'bar', 'baz')
+      req = new_request('accord', 'foo')
+      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
-      expect{ request.send(3) }.not_to raise_exception
+      expect{ req.send(3) }.not_to raise_exception
     end
 
     it "allows you to specify a message timeout & cache timeout" do
-      request = new_request('accord', 'foo')
-      request.insert_fake_stomp('foo', 'bar', 'baz')
+      req = new_request('accord', 'foo')
+      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
-      expect{ request.send(3, 120) }.not_to raise_exception
+      expect{ req.send(3, 120) }.not_to raise_exception
     end
 
     it 'returns a nebulous timeout if there is no response' do
-      request = new_request('accord', 'foo')
-      expect{ request.send }.to raise_exception Nebulous::NebulousTimeout
+      req = new_request('accord', 'foo')
+      expect{ req.send }.to raise_exception Nebulous::NebulousTimeout
     end
 
     it 'still works if Redis is turned off in the config' do
       disable(:redis)
       r = new_request('accord', 'tom')
-      r.insert_fake_stomp('foo', 'bar', 'baz')
+      r.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
       response = r.send
       expect( response ).to be_a Nebulous::Message

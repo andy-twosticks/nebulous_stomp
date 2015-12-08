@@ -34,15 +34,16 @@ require 'nebulous/param'
 # Nebulous::RedisHandler.
 #
 # a complete list of classes & modules:
-#   * Nebulous
-#   * Nebulous::Param
-#   * Nebulous::NebRequest
-#   * Nebulous::NebRequestNull
-#   * Nebulous::Message
-#   * Nebulous::StompHandler
-#   * Nebulous::StompHandlerNull
-#   * Nebulous::RedisHandler
-#   * Nebulous::RedisHandlerNull
+#
+# * Nebulous
+# * Nebulous::Param
+# * Nebulous::NebRequest
+# * Nebulous::NebRequestNull
+# * Nebulous::Message
+# * Nebulous::StompHandler
+# * Nebulous::StompHandlerNull
+# * Nebulous::RedisHandler
+# * Nebulous::RedisHandlerNull
 #
 module Nebulous
 

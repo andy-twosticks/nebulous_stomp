@@ -22,8 +22,8 @@ module Nebulous
     end
 
 
-    def insert_fake_stomp(verb, params, desc)
-      @stomp_handler.insert_fake(verb, params, desc)
+    def insert_fake_stomp(message)
+      @stomp_handler.insert_fake(message)
     end
 
 

@@ -26,8 +26,8 @@ module Nebulous
     end
 
 
-    def insert_fake(verb, params, desc)
-      @fake_mess = Message.from_parts( nil, nil, verb, params, desc )
+    def insert_fake(message)
+      @fake_mess = message
     end
 
 
