@@ -7,6 +7,10 @@ require 'devnull'
 
 require 'nebulous/version'
 require 'nebulous/param'
+require 'nebulous/message'
+require 'nebulous/nebrequest'
+require 'nebulous/stomp_handler'
+require 'nebulous/redis_handler'
 
 
 ##
@@ -45,6 +49,7 @@ require 'nebulous/param'
 # * Nebulous::RedisHandler
 # * Nebulous::RedisHandlerNull
 #
+# If you want the null classes, you must require them seperately.
 module Nebulous
 
 

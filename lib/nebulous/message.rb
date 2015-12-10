@@ -54,11 +54,18 @@ module Nebulous
 
         Nebulous.logger.debug(__FILE__){ "New message from parts" }
 
-        self.new( replyTo:     replyTo,
-                  inReplyTo:   inReplyTo,
-                  verb:        verb,
-                  params:      params,
-                  desc:        desc,
+        p = 
+          case params
+            when NilClass then nil
+            when Array    then params.dup
+            else params.to_s
+          end
+
+        self.new( replyTo:     replyTo.to_s,
+                  inReplyTo:   inReplyTo.to_s,
+                  verb:        verb.to_s,
+                  params:      p,
+                  desc:        desc.nil? ? nil : desc.to_s,
                   contentType: 'application/json' )
 
       end
@@ -75,12 +82,20 @@ module Nebulous
 
         Nebulous.logger.debug(__FILE__){ "New message reply" }
 
-        self.new( replyTo:     replyTo,
-                  verb:        verb,
-                  params:      params,
-                  desc:        desc,
-                  inReplyTo:   msg.reply_id,
-                  contentType: msg.content_type )
+        p = 
+          case params
+            when NilClass then nil
+            when Array    then params.dup
+            else params.to_s
+          end
+
+        m = msg.clone
+        self.new( replyTo:     replyTo.to_s,
+                  verb:        verb.to_s,
+                  params:      p,
+                  desc:        desc.to_s,
+                  inReplyTo:   m.reply_id,
+                  contentType: m.content_type )
 
       end
       
@@ -94,8 +109,9 @@ module Nebulous
 
         Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
 
-        obj = self.new( stompHeaders: stompMsg.headers,
-                        stompBody:    stompMsg.body     )
+        s = stompMsg.clone
+        obj = self.new( stompHeaders: s.headers,
+                        stompBody:    s.body     )
 
       end
 
@@ -121,7 +137,7 @@ module Nebulous
         # So now if the content type is JSON then the body is still JSON now.
         # It's only the rest of the cache hash that is a now a hash. Confused?
         # Now join us for this weeks' episode...
-        self.new( hash )
+        self.new( hash.clone )
 
       rescue JSON::ParserError => err  
         raise ArgumentError, "Bad JSON: #{err.message}"

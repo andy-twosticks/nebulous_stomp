@@ -76,10 +76,10 @@ module Nebulous
 
       Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
-      @target        = target                           
-      @verb          = verb
-      @params        = params
-      @desc          = desc 
+      @target        = target.to_s
+      @verb          = verb.to_s
+      @params        = params.nil? ? nil : params.to_s
+      @desc          = desc.nil?   ? nil : desc.to_s
       @stomp_handler = stompHandler 
       @redis_handler = redisHandler 
       @requestQ      = nil

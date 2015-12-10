@@ -23,8 +23,8 @@ module Nebulous
     # testing. It's probably of no use to anyone else.
     #
     def initialize(connectHash, testRedis=nil)
-      @redis_hash = connectHash
-      @test_redis = testRedis
+      @redis_hash = connectHash.nil? ? nil : connectHash.dup
+      @test_redis = testRedis 
       @redis      = nil
     end
 

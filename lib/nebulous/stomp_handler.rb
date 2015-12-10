@@ -112,7 +112,7 @@ module Nebulous
     # ONLY set testClient when testing.
     #
     def initialize(connectHash, testClient=nil)
-      @stomp_hash  = connectHash
+      @stomp_hash  = connectHash.nil? ? nil : connectHash.dup
       @test_client = testClient
       @client      = nil
     end

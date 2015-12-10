@@ -564,7 +564,7 @@ describe Message do
       _,m = msg_cache.respond_error(err, :foo)
       expect( m ).to be_a_kind_of Message
       expect( m.verb ).to eq 'error'
-      expect( m.params ).to eq :foo
+      expect( m.params ).to eq "foo"
       expect( m.desc ).to eq err.message
     end
 
