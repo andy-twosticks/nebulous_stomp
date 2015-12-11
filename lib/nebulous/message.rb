@@ -30,6 +30,8 @@ module Nebulous
     attr_reader :content_type
 
     # The Nebulous Protocol
+    # Note that if you happen to pass an array as @params, it's actually
+    # writable, which is not ideal.
     attr_reader :verb, :params, :desc
     attr_reader :reply_to, :in_reply_to 
 
@@ -109,7 +111,7 @@ module Nebulous
 
         Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
 
-        s = stompMsg.clone
+        s = Marshal.load( Marshal.dump(stompMsg) )
         obj = self.new( stompHeaders: s.headers,
                         stompBody:    s.body     )
 
@@ -184,7 +186,7 @@ module Nebulous
       { stompHeaders: @stomp_headers,
         stompBody:    @stomp_body,
         verb:         @verb,
-        params:       @params,
+        params:       @params.kind_of?(Enumerable) ? @params.dup : @params,
         desc:         @desc,
         replyTo:      @reply_to,
         replyId:      @reply_id,

@@ -23,7 +23,7 @@ module Nebulous
     # testing. It's probably of no use to anyone else.
     #
     def initialize(connectHash, testRedis=nil)
-      @redis_hash = connectHash.nil? ? nil : connectHash.dup
+      @redis_hash = connectHash ? connectHash.dup : nil
       @test_redis = testRedis 
       @redis      = nil
     end
@@ -34,7 +34,7 @@ module Nebulous
     # fails. 
     #
     def connect
-      @redis = @test_redis || Redis.new(@redis_hash)
+      @redis = @test_redis || Redis.new(@redis_hash.dup)
 
       @redis.client.connect
       raise ConnectionError, "Redis Connection failed" unless @redis.connected?

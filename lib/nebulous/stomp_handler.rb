@@ -112,7 +112,7 @@ module Nebulous
     # ONLY set testClient when testing.
     #
     def initialize(connectHash, testClient=nil)
-      @stomp_hash  = connectHash.nil? ? nil : connectHash.dup
+      @stomp_hash  = connectHash ? connectHash.dup : nil
       @test_client = testClient
       @client      = nil
     end
@@ -125,7 +125,7 @@ module Nebulous
       return self unless nebulous_on?
       Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
 
-      @client = @test_client || Stomp::Client.new( @stomp_hash )
+      @client = @test_client || Stomp::Client.new( @stomp_hash.dup )
       raise ConnectionError, "Stomp Connection failed" unless connected?
 
       conn = @client.connection_frame()
