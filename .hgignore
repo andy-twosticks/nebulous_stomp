@@ -16,3 +16,4 @@ syntax: glob
 *.a
 mkmf.log
 .ruby-*
+.Project
