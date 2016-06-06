@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'nebulous/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "nebulous"
+  spec.name          = "nebulous_stomp"
   spec.version       = Nebulous::VERSION
   spec.authors       = ["Andy Jones"]
   spec.email         = ["andy.jones@twosticksconsulting.co.uk"]
