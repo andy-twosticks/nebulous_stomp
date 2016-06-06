@@ -1,12 +1,10 @@
-# coding: UTF-8
-
 require 'redis'
 require 'json'
 
 require_relative 'redis_handler'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ##

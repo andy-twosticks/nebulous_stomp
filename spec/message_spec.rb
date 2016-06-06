@@ -1,13 +1,11 @@
 require 'stomp'
 
 require 'spec_helper'
-require 'nebulous/message'
+require 'nebulous_stomp/message'
 
 require_relative 'helpers'
 
-require 'pry'
-
-include Nebulous
+include NebulousStomp
 
 
 RSpec.configure do |c|

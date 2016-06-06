@@ -1,7 +1,7 @@
 --color
 --require spec_helper
 #--require doc_no_pending
---require nebulous
+--require nebulous_stomp
 -I .
 
 #--fail-fast

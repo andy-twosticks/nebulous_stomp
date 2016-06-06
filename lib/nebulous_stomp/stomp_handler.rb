@@ -1,11 +1,9 @@
-# COding: UTF-8
-
 require 'stomp'
 require 'json'
 require 'time'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ##
@@ -123,7 +121,7 @@ module Nebulous
     #
     def stomp_connect
       return self unless nebulous_on?
-      Nebulous.logger.info(__FILE__) {"Connecting to STOMP"} 
+      NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = @test_client || Stomp::Client.new( @stomp_hash.dup )
       raise ConnectionError, "Stomp Connection failed" unless connected?
@@ -145,7 +143,7 @@ module Nebulous
     #
     def stomp_disconnect
       if @client
-        Nebulous.logger.info(__FILE__) {"STOMP Disconnect"}
+        NebulousStomp.logger.info(__FILE__) {"STOMP Disconnect"}
         @client.close if @client
         @client = nil
       end
@@ -183,7 +181,7 @@ module Nebulous
     #
     def listen(queue)
       return unless nebulous_on?
-      Nebulous.logger.info(__FILE__) {"Subscribing to #{queue}"}
+      NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue}"}
 
       stomp_connect unless @client
 
@@ -196,7 +194,7 @@ module Nebulous
           @client.ack(msg)
           yield Message.from_stomp(msg) unless msg.body == 'boo'
         rescue =>e
-          Nebulous.logger.error(__FILE__) {"Error during polling: #{e}" }
+          NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
         end
       end
 
@@ -218,7 +216,7 @@ module Nebulous
     def listen_with_timeout(queue, timeout)
       return unless nebulous_on?
 
-      Nebulous.logger.info(__FILE__) do
+      NebulousStomp.logger.info(__FILE__) do
         "Subscribing to #{queue} with timeout #{timeout}"
       end
 
@@ -239,7 +237,7 @@ module Nebulous
               done = true
             end
           rescue =>e
-            Nebulous.logger.error(__FILE__) {"Error during polling: #{e}" }
+            NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
           end
 
         end # of Stomp client subscribe block
@@ -258,7 +256,7 @@ module Nebulous
     #
     def send_message(queue, mess)
       return nil unless nebulous_on?
-      raise Nebulous::NebulousError, "That's not a Message" \
+      raise NebulousStomp::NebulousError, "That's not a Message" \
         unless mess.respond_to?(:body_for_stomp) \
             && mess.respond_to?(:headers_for_stomp)
 

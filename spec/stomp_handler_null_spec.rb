@@ -2,9 +2,9 @@ require 'spec_helper'
 
 require 'time'
 
-require 'nebulous/stomp_handler_null'
+require 'nebulous_stomp/stomp_handler_null'
 
-include Nebulous
+include NebulousStomp
 
 
 describe StompHandlerNull do
@@ -47,7 +47,7 @@ describe StompHandlerNull do
 
     it 'sets the message to send' do
       handler.insert_fake( Message.from_parts('', '','foo', 'bar', 'baz') )
-      expect( handler.fake_mess ).to be_a_kind_of Nebulous::Message
+      expect( handler.fake_mess ).to be_a_kind_of NebulousStomp::Message
       expect( handler.fake_mess.verb ).to eq 'foo'
     end
 
@@ -92,7 +92,7 @@ describe StompHandlerNull do
 
 
   describe "send_message" do
-    let(:mess) { Nebulous::Message.from_parts(nil, nil, 'foo', nil, nil) }
+    let(:mess) { NebulousStomp::Message.from_parts(nil, nil, 'foo', nil, nil) }
 
     it "accepts a queue name and a Message" do
       expect{ handler.send_message('foo', mess) }.not_to raise_exception
@@ -125,7 +125,7 @@ describe StompHandlerNull do
       gotMessage = run_listen(1)
 
       expect(gotMessage).not_to be_nil
-      expect(gotMessage).to be_a_kind_of Nebulous::Message
+      expect(gotMessage).to be_a_kind_of NebulousStomp::Message
     end
 
   end
@@ -150,7 +150,7 @@ describe StompHandlerNull do
         gotMessage = run_listen_with_timeout(1)
 
         expect( gotMessage ).not_to be_nil
-        expect( gotMessage ).to be_a_kind_of Nebulous::Message
+        expect( gotMessage ).to be_a_kind_of NebulousStomp::Message
       end
 
     end
@@ -159,7 +159,7 @@ describe StompHandlerNull do
 
       it 'raises NebulousTimeout' do
         expect{handler.listen_with_timeout('foo', 2)}.
-          to raise_exception Nebulous::NebulousTimeout
+          to raise_exception NebulousStomp::NebulousTimeout
 
       end
 

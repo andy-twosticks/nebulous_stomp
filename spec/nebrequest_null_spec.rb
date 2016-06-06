@@ -1,14 +1,9 @@
 require 'spec_helper'
 
-include Nebulous
+include NebulousStomp
 
-require 'nebulous/nebrequest_null'
-
-require 'nebulous/message'
-#require 'nebulous/stomp_handler_null'
-#require 'nebulous/redis_handler_null'
-
-require 'pry' 
+require 'nebulous_stomp/nebrequest_null'
+require 'nebulous_stomp/message'
 
 
 describe NebRequestNull do
@@ -18,12 +13,12 @@ describe NebRequestNull do
   end
 
   def disable(thing)
-    Nebulous.init( :stompConnectHash => thing == :stomp ? {} : stomp_hash,
+    NebulousStomp.init( :stompConnectHash => thing == :stomp ? {} : stomp_hash,
                    :redisConnectHash => thing == :redis ? {} : redis_hash,
                    :messageTimeout   => 5,
                    :cacheTimeout     => 20 )
 
-    Nebulous.add_target( :accord, 
+    NebulousStomp.add_target( :accord, 
                          :sendQueue      => "/queue/laplace.dev",
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
@@ -59,7 +54,7 @@ describe NebRequestNull do
     end
 
     it "falls back to the default if the timeout on the target is not set" do
-      Nebulous.add_target( :dracula, 
+      NebulousStomp.add_target( :dracula, 
                            :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
@@ -103,14 +98,14 @@ describe NebRequestNull do
       req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       response = req.send_no_cache
 
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 
     it 'returns a nebulous timeout if there is no response' do
       request = new_request('accord', 'foo')
       expect{ request.send_no_cache }.
-        to raise_exception Nebulous::NebulousTimeout
+        to raise_exception NebulousStomp::NebulousTimeout
 
     end
 
@@ -132,7 +127,7 @@ describe NebRequestNull do
       req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
       response = req.send
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 
@@ -142,7 +137,7 @@ describe NebRequestNull do
       req.insert_fake_redis('xxx', {'verb' => 'frog'}.to_json)
       response = req.send
 
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('frog')
     end
 
@@ -162,7 +157,7 @@ describe NebRequestNull do
 
     it 'returns a nebulous timeout if there is no response' do
       req = new_request('accord', 'foo')
-      expect{ req.send }.to raise_exception Nebulous::NebulousTimeout
+      expect{ req.send }.to raise_exception NebulousStomp::NebulousTimeout
     end
 
     it 'still works if Redis is turned off in the config' do
@@ -171,7 +166,7 @@ describe NebRequestNull do
       r.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
 
       response = r.send
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 

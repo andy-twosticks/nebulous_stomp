@@ -1,7 +1,7 @@
 require 'spec_helper'
-require 'nebulous/param'
+require 'nebulous_stomp/param'
 
-include Nebulous
+include NebulousStomp
 
 
 describe Param do
@@ -131,10 +131,10 @@ describe Param do
   describe "Param.set_logger" do
 
     it "requires an instance of Logger, or nil" do
-      expect{ Nebulous.set_logger(:foo) }.to raise_exception NebulousError
+      expect{ NebulousStomp.set_logger(:foo) }.to raise_exception NebulousError
 
-      expect{ Nebulous.set_logger(nil) }.not_to raise_exception
-      expect{ Nebulous.set_logger( Logger.new(STDOUT) ) }.not_to raise_exception
+      expect{ NebulousStomp.set_logger(nil) }.not_to raise_exception
+      expect{ NebulousStomp.set_logger( Logger.new(STDOUT) ) }.not_to raise_exception
     end
 
   end

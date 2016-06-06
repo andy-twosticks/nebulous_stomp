@@ -1,11 +1,9 @@
-# COding: UTF-8
-
 require 'json'
 
 require_relative 'stomp_handler'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ## 
@@ -54,7 +52,7 @@ module Nebulous
       def from_parts(replyTo, inReplyTo, verb, params, desc)
         raise ArgumentError, "missing parts" unless verb
 
-        Nebulous.logger.debug(__FILE__){ "New message from parts" }
+        NebulousStomp.logger.debug(__FILE__){ "New message from parts" }
 
         p = 
           case params
@@ -82,7 +80,7 @@ module Nebulous
       def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)
         raise ArgumentError, 'bad message' unless msg.kind_of? Message
 
-        Nebulous.logger.debug(__FILE__){ "New message reply" }
+        NebulousStomp.logger.debug(__FILE__){ "New message reply" }
 
         p = 
           case params
@@ -109,7 +107,7 @@ module Nebulous
         raise ArgumentError, 'not a stomp message' \
           unless stompMsg.kind_of? Stomp::Message
 
-        Nebulous.logger.debug(__FILE__){ "New message from STOMP" }
+        NebulousStomp.logger.debug(__FILE__){ "New message from STOMP" }
 
         s = Marshal.load( Marshal.dump(stompMsg) )
         obj = self.new( stompHeaders: s.headers,
@@ -127,7 +125,7 @@ module Nebulous
         raise ArgumentError, "That can't be JSON, it's not a string" \
           unless json.kind_of? String
 
-        Nebulous.logger.debug(__FILE__){ "New message from cache" }
+        NebulousStomp.logger.debug(__FILE__){ "New message from cache" }
 
         # Note that the message body at this point, for a JSON message, is
         # actually encoded to JSON *twice* - the second time was when the cache
@@ -259,7 +257,7 @@ module Nebulous
     def respond_success
       raise NebulousError, "Don''t know who to reply to" unless @reply_to
 
-      Nebulous.logger.info(__FILE__) do
+      NebulousStomp.logger.info(__FILE__) do
         "Responded to #{self} with 'success' verb"
       end
 
@@ -278,7 +276,7 @@ module Nebulous
     def respond_error(err,fields=[])
       raise NebulousError, "Don''t know who to reply to" unless @reply_to
 
-      Nebulous.logger.info(__FILE__) do
+      NebulousStomp.logger.info(__FILE__) do
         "Responded to #{self} with 'error': #{err}" 
       end
 

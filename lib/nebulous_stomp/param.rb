@@ -1,7 +1,4 @@
-# coding: UTF-8
-
-
-module Nebulous
+module NebulousStomp
 
 
   ##

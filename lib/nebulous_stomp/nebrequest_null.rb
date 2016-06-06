@@ -1,13 +1,11 @@
-# coding: UTF-8
-
-require 'nebulous'
+require 'nebulous_stomp'
 
 require_relative 'nebrequest'
 require_relative 'stomp_handler_null'
 require_relative 'redis_handler_null'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ## 

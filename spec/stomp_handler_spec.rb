@@ -1,12 +1,12 @@
 require 'time'
 require 'spec_helper'
 
-require 'nebulous/stomp_handler'
-require 'nebulous/message'
+require 'nebulous_stomp/stomp_handler'
+require 'nebulous_stomp/message'
 
 require_relative 'helpers'
 
-include Nebulous
+include NebulousStomp
 
 
 RSpec.configure do |c|
@@ -171,7 +171,7 @@ describe StompHandler do
       hash = stomp_hash.merge( hosts: {passcode:'flurb'} )
       sh = StompHandler.new(hash)
 
-      expect{sh.stomp_connect}.to raise_exception Nebulous::ConnectionError
+      expect{sh.stomp_connect}.to raise_exception NebulousStomp::ConnectionError
     end
 
     it "returns self" do
@@ -241,7 +241,7 @@ describe StompHandler do
       handler.stomp_disconnect
 
       expect{ handler.calc_reply_id }.
-        to raise_exception Nebulous::ConnectionError
+        to raise_exception NebulousStomp::ConnectionError
 
     end
 
@@ -266,7 +266,7 @@ describe StompHandler do
     # We're kind of navel gazing here because send_message is just one line: a
     # call to client.publish. Still, call it a warming up exercise....
     
-    let(:mess) { Nebulous::Message.from_parts(nil, nil, 'foo', nil, nil) }
+    let(:mess) { NebulousStomp::Message.from_parts(nil, nil, 'foo', nil, nil) }
 
     before do
       handler.stomp_connect
@@ -277,7 +277,7 @@ describe StompHandler do
       expect{ handler.send_message('foo') }.to raise_exception ArgumentError
       expect{ handler.send_message(1,2,3) }.to raise_exception ArgumentError
       expect{ handler.send_message('foo', 12) }.
-        to raise_exception Nebulous::NebulousError
+        to raise_exception NebulousStomp::NebulousError
 
       expect{ handler.send_message('foo', mess) }.not_to raise_exception
     end
@@ -339,7 +339,7 @@ describe StompHandler do
       gotMessage = run_listen(1)
 
       expect(gotMessage).not_to be_nil
-      expect(gotMessage).to be_a_kind_of Nebulous::Message
+      expect(gotMessage).to be_a_kind_of NebulousStomp::Message
       expect( gotMessage.verb ).to eq 'Foo'
     end
 
@@ -352,7 +352,7 @@ describe StompHandler do
       gotMessage = run_listen(2)
 
       expect(gotMessage).not_to be_nil
-      expect(gotMessage).to be_a_kind_of Nebulous::Message
+      expect(gotMessage).to be_a_kind_of NebulousStomp::Message
       expect( gotMessage.verb ).to eq 'Bar'
     end
 
@@ -399,7 +399,7 @@ describe StompHandler do
       stop = Time.now
 
       expect( gotMessage ).not_to be_nil
-      expect( gotMessage ).to be_a_kind_of Nebulous::Message
+      expect( gotMessage ).to be_a_kind_of NebulousStomp::Message
       expect( gotMessage.verb ).to eq 'Foo'
       expect(stop - start).to be < 0.5
     end
@@ -413,7 +413,7 @@ describe StompHandler do
       gotMessage = run_listen_with_timeout(2)
 
       expect( gotMessage ).not_to be_nil
-      expect( gotMessage ).to be_a_kind_of Nebulous::Message
+      expect( gotMessage ).to be_a_kind_of NebulousStomp::Message
       expect( gotMessage.verb ).to eq 'Foo'
     end
 

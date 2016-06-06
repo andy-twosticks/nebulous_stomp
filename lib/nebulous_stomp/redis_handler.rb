@@ -1,9 +1,7 @@
-# coding: UTF-8
-
 require 'redis'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ##

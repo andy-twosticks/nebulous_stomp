@@ -1,5 +1,3 @@
-# COding: UTF-8
-
 require 'stomp'
 require 'json'
 require 'time'
@@ -8,7 +6,7 @@ require_relative 'stomp_handler'
 require_relative 'message'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ##
@@ -32,7 +30,7 @@ module Nebulous
 
 
     def stomp_connect
-      Nebulous.logger.info(__FILE__) {"Connecting to STOMP (Null)"} 
+      NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP (Null)"} 
 
       @client = true
       self
@@ -40,7 +38,7 @@ module Nebulous
 
 
     def stomp_disconnect
-      Nebulous.logger.info(__FILE__) {"STOMP Disconnect (Null)"}
+      NebulousStomp.logger.info(__FILE__) {"STOMP Disconnect (Null)"}
       @client = nil
       self
     end
@@ -52,19 +50,19 @@ module Nebulous
 
 
     def listen(queue)
-      Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+      NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
       yield @fake_mess
     end
 
 
     def listen_with_timeout(queue, timeout)
-      Nebulous.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+      NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
 
       if @fake_mess
         yield @fake_mess
       else
         sleep timeout
-        raise Nebulous::NebulousTimeout
+        raise NebulousStomp::NebulousTimeout
       end
     end
 
@@ -75,14 +73,14 @@ module Nebulous
 
 
     def respond_success(nebMess)
-      Nebulous.logger.info(__FILE__) do 
+      NebulousStomp.logger.info(__FILE__) do 
         "Responded to #{nebMess} with 'success' verb (to Null)"
       end
     end
 
 
     def respond_error(nebMess,err,fields=[])
-      Nebulous.logger.info(__FILE__) do
+      NebulousStomp.logger.info(__FILE__) do
         "Responded to #{nebMess} with 'error' verb: #{err} (to Null)"
       end
     end

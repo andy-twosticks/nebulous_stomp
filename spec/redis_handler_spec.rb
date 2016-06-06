@@ -1,10 +1,8 @@
 require 'spec_helper'
 
-require 'pry'
+require 'nebulous_stomp/redis_handler'
 
-require 'nebulous/redis_handler'
-
-include Nebulous
+include NebulousStomp
 
 
 describe RedisHandler do
@@ -116,10 +114,10 @@ describe RedisHandler do
 
     it 'raises ConnectionError if connect has not been called' do
       expect{ handler.set("foo", {bar:1}) }.
-        to raise_exception Nebulous::ConnectionError
+        to raise_exception NebulousStomp::ConnectionError
 
-      expect{ handler.get("foo") }.to raise_exception Nebulous::ConnectionError
-      expect{ handler.del("foo") }.to raise_exception Nebulous::ConnectionError
+      expect{ handler.get("foo") }.to raise_exception NebulousStomp::ConnectionError
+      expect{ handler.del("foo") }.to raise_exception NebulousStomp::ConnectionError
     end
 
     it 'raises ConnectionError if not connected' do
@@ -127,10 +125,10 @@ describe RedisHandler do
       handler.connect
 
       expect{ handler.set("foo", {bar:1}) }.
-        to raise_exception Nebulous::ConnectionError
+        to raise_exception NebulousStomp::ConnectionError
 
-      expect{ handler.get("foo") }.to raise_exception Nebulous::ConnectionError
-      expect{ handler.del("foo") }.to raise_exception Nebulous::ConnectionError
+      expect{ handler.get("foo") }.to raise_exception NebulousStomp::ConnectionError
+      expect{ handler.del("foo") }.to raise_exception NebulousStomp::ConnectionError
     end
 
 

@@ -1,10 +1,10 @@
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'nebulous/version'
+require 'nebulous_stomp/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "nebulous_stomp"
-  spec.version       = Nebulous::VERSION
+  spec.version       = NebulousStomp::VERSION
   spec.authors       = ["Andy Jones"]
   spec.email         = ["andy.jones@twosticksconsulting.co.uk"]
   spec.summary       = %q{Handles request-and-response messaging via STOMP}
@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   DESC
 
   spec.license       = "MIT"
-  spec.homepage      = "https://bitbucket.org/andy-twosticks/nebulous"
+  spec.homepage      = "https://bitbucket.org/andy-twosticks/nebulous_stomp"
 
   spec.files         = `hg status -macn0`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }

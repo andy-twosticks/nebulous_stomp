@@ -1,16 +1,14 @@
-# coding: UTF-8
-
 require 'stomp'
 require 'redis'
 require 'logger'
 require 'devnull'
 
-require 'nebulous/version'
-require 'nebulous/param'
-require 'nebulous/message'
-require 'nebulous/nebrequest'
-require 'nebulous/stomp_handler'
-require 'nebulous/redis_handler'
+require 'nebulous_stomp/version'
+require 'nebulous_stomp/param'
+require 'nebulous_stomp/message'
+require 'nebulous_stomp/nebrequest'
+require 'nebulous_stomp/stomp_handler'
+require 'nebulous_stomp/redis_handler'
 
 
 ##
@@ -39,18 +37,18 @@ require 'nebulous/redis_handler'
 #
 # a complete list of classes & modules:
 #
-# * Nebulous
-# * Nebulous::Param
-# * Nebulous::NebRequest
-# * Nebulous::NebRequestNull
-# * Nebulous::Message
-# * Nebulous::StompHandler
-# * Nebulous::StompHandlerNull
-# * Nebulous::RedisHandler
-# * Nebulous::RedisHandlerNull
+# * NebulousStomp
+# * NebulousStomp::Param
+# * NebulousStomp::NebRequest
+# * NebulousStomp::NebRequestNull
+# * NebulousStomp::Message
+# * NebulousStomp::StompHandler
+# * NebulousStomp::StompHandlerNull
+# * NebulousStomp::RedisHandler
+# * NebulousStomp::RedisHandlerNull
 #
 # If you want the null classes, you must require them seperately.
-module Nebulous
+module NebulousStomp
 
 
   # Thrown when anything goes wrong.

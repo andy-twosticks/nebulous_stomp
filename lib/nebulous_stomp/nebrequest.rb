@@ -1,13 +1,9 @@
-# coding: UTF-8
-
-require 'nebulous'
-
 require_relative 'stomp_handler'
 require_relative 'redis_handler'
 require_relative 'message'
 
 
-module Nebulous
+module NebulousStomp
 
 
   ##
@@ -74,7 +70,7 @@ module Nebulous
                     stompHandler=nil, 
                     redisHandler=nil )
 
-      Nebulous.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
+      NebulousStomp.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
       @target        = target.to_s
       @verb          = verb.to_s

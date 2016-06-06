@@ -1,10 +1,8 @@
 require 'spec_helper'
 
-require 'pry'
+require 'nebulous_stomp/redis_handler_null'
 
-require 'nebulous/redis_handler_null'
-
-include Nebulous
+include NebulousStomp
 
 
 describe RedisHandlerNull do

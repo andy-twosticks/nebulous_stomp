@@ -1,13 +1,11 @@
 require 'spec_helper'
 
-include Nebulous
+include NebulousStomp
 
-require 'nebulous/nebrequest'
-require 'nebulous/message'
-require 'nebulous/stomp_handler_null'
-require 'nebulous/redis_handler_null'
-
-require 'pry' 
+require 'nebulous_stomp/nebrequest'
+require 'nebulous_stomp/message'
+require 'nebulous_stomp/stomp_handler_null'
+require 'nebulous_stomp/redis_handler_null'
 
 
 describe NebRequest do
@@ -32,12 +30,12 @@ describe NebRequest do
   end
 
   before do
-    Nebulous.init( :stompConnectHash => @stomph, 
+    NebulousStomp.init( :stompConnectHash => @stomph, 
                    :redisConnectHash => @redish,
                    :messageTimeout   => 5,
                    :cacheTimeout     => 20 )
 
-    Nebulous.add_target( :accord, 
+    NebulousStomp.add_target( :accord, 
                          :sendQueue      => "/queue/laplace.dev",
                          :receiveQueue   => "/queue/laplace.out",
                          :messageTimeout => 1 )
@@ -58,7 +56,7 @@ describe NebRequest do
     end
 
     it "falls back to the default if the timeout on the target is not set" do
-      Nebulous.add_target( :dracula, 
+      NebulousStomp.add_target( :dracula, 
                            :sendQueue      => "/queue/laplace.dev",
                            :receiveQueue   => "/queue/laplace.out" )
 
@@ -110,14 +108,14 @@ describe NebRequest do
       request = new_request('accord', 'foo')
       response = request.send_no_cache
 
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 
     it 'returns a nebulous timeout if there is no response' do
       request = new_request('accord', 'foo')
       expect{ request.send_no_cache }.
-        to raise_exception Nebulous::NebulousTimeout
+        to raise_exception NebulousStomp::NebulousTimeout
 
     end
 
@@ -139,7 +137,7 @@ describe NebRequest do
       request = new_request('accord', 'foo')
 
       response = request.send
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 
@@ -155,7 +153,7 @@ describe NebRequest do
       request = new_request('accord', 'foo')
       response = request.send
 
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('frog')
     end
 
@@ -175,7 +173,7 @@ describe NebRequest do
 
     it 'returns a nebulous timeout if there is no response' do
       request = new_request('accord', 'foo')
-      expect{ request.send }.to raise_exception Nebulous::NebulousTimeout
+      expect{ request.send }.to raise_exception NebulousStomp::NebulousTimeout
     end
 
     it 'still works if Redis is turned off in the config' do
@@ -184,7 +182,7 @@ describe NebRequest do
       r = NebRequest.new('accord', 'tom', nil, nil, stomp_h, rh)
 
       response = r.send
-      expect( response ).to be_a Nebulous::Message
+      expect( response ).to be_a NebulousStomp::Message
       expect( response.verb ).to eq('foo')
     end
 
