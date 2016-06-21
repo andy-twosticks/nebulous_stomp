@@ -2,12 +2,15 @@ require 'stomp'
 require 'json'
 require 'time'
 
-
 module NebulousStomp
 
 
   ##
-  # A Class to deal with talking to STOMP via the Stomp gem
+  # A Class to deal with talking to STOMP via the Stomp gem.
+  #
+  # You will need to instantiate this yourself if you only want to listen for messages. But if you
+  # want to send a request and receive a response, you should never need this -- a NebRequest
+  # returns a Message.
   #
   class StompHandler
 
@@ -123,7 +126,7 @@ module NebulousStomp
       return self unless nebulous_on?
       NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP"} 
 
-      @client = @test_client || Stomp::Client.new( @stomp_hash.dup )
+      @client = @test_client || Stomp::Client.new( @stomp_hash )
       raise ConnectionError, "Stomp Connection failed" unless connected?
 
       conn = @client.connection_frame()
@@ -208,9 +211,6 @@ module NebulousStomp
     # Ideally I'd like to DRY this and listen() up, but with this
     # yield-within-a-thread stuff going on, I'm actually not sure how to do
     # that safely.
-    #
-    # Actually i'm not even sure how to stop once I've read one message. The
-    # Stomp gem behaves very strangely.
     #++
     #
     def listen_with_timeout(queue, timeout)
@@ -230,21 +230,24 @@ module NebulousStomp
         @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
 
           begin
-            if msg.body == 'boo'
-              @client.ack(msg)
-            elsif done == false
+            unless msg.body == "boo"
               yield Message.from_stomp(msg) 
               done = true
             end
+            @client.ack(msg)
           rescue =>e
             NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
           end
 
+          if done
+            # Not that this seems to do any good when the Stomp gem is in play
+            resource.signal 
+            break
+          end
+
         end # of Stomp client subscribe block
 
-        # Not that this seems to do any good when the Stomp gem is in play, but.
-        resource.signal if done
-
+        resource.signal if done #or here. either, but.
       end # of with_timeout
 
       raise NebulousTimeout unless done
@@ -261,7 +264,10 @@ module NebulousStomp
             && mess.respond_to?(:headers_for_stomp)
 
       stomp_connect unless @client
-      @client.publish(queue, mess.body_for_stomp, mess.headers_for_stomp)
+
+      headers = mess.headers_for_stomp.reject{|k,v| v.nil? || v == "" }
+      @client.publish(queue, mess.body_for_stomp, headers)
+
       mess
     end
 

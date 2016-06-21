@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.requirements << 'Redis server (optional)'
 
   spec.post_install_message = <<~MESSAGE
-    Nebulous has been installed ...sort of...  ::waves arms noncomittedly::
+    Nebulous has been installed ...sort of... ::waves arms noncomittedly::
   MESSAGE
 
   spec.add_development_dependency "bundler", "~> 1.11"
@@ -39,8 +39,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry-doc"
   spec.add_development_dependency "ripper-tags"
 
-  spec.add_runtime_dependency 'stomp',   '>=1.3'
-  spec.add_runtime_dependency 'redis',   '>=3.1'
+  spec.add_runtime_dependency 'stomp',   '~>1.4'
+  spec.add_runtime_dependency 'redis',   '~>3.1'
   spec.add_runtime_dependency 'devnull', '~>0.1'
  
 end
