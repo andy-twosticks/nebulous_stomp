@@ -110,10 +110,14 @@ module NebulousStomp
 
     ##
     # Initialise StompHandler by passing the parameter hash.
+    #
+    # If no hash is set we try and get it from NebulousStomp::Param.
     # ONLY set testClient when testing.
     #
-    def initialize(connectHash, testClient=nil)
-      @stomp_hash  = connectHash ? connectHash.dup : nil
+    def initialize(connectHash=nil, testClient=nil)
+      @stomp_hash   = connectHash ? connectHash.dup : nil
+      @stomp_hash ||= Param.get(:stompConnectHash)
+
       @test_client = testClient
       @client      = nil
     end
