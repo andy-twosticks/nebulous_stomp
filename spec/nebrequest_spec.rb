@@ -104,8 +104,8 @@ describe NebRequest do
   describe "#send_no_cache" do
 
     it "returns something from STOMP" do
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       request = new_request('accord', 'foo')
+      stomp_h.insert_fake( Message.from_parts(nil, request.replyID, 'foo', 'bar', 'baz') )
       response = request.send_no_cache
 
       expect( response ).to be_a NebulousStomp::Message
@@ -133,8 +133,8 @@ describe NebRequest do
   describe "#send" do
 
     it "returns a Message object from STOMP the first time" do
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       request = new_request('accord', 'foo')
+      stomp_h.insert_fake( Message.from_parts(nil, request.replyID, 'foo', 'bar', 'baz') )
 
       response = request.send
       expect( response ).to be_a NebulousStomp::Message
@@ -142,7 +142,7 @@ describe NebRequest do
     end
 
     it "returns the answer from the cache the second time" do
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      stomp_h.insert_fake( Message.from_parts(nil, nil, 'foo', 'bar', 'baz') )
       redis_h.insert_fake('xxx', {'verb' => 'frog'}.to_json)
 
       # First time
@@ -158,15 +158,15 @@ describe NebRequest do
     end
 
     it "allows you to specify a message timeout" do
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       request = new_request('accord', 'foo')
+      stomp_h.insert_fake( Message.from_parts(nil, request.replyID, 'foo', 'bar', 'baz') )
 
       expect{ request.send(3) }.not_to raise_exception
     end
 
     it "allows you to specify a message timeout & cache timeout" do
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       request = new_request('accord', 'foo')
+      stomp_h.insert_fake( Message.from_parts(nil, request.replyID, 'foo', 'bar', 'baz') )
 
       expect{ request.send(3, 120) }.not_to raise_exception
     end
@@ -178,8 +178,8 @@ describe NebRequest do
 
     it 'still works if Redis is turned off in the config' do
       rh = RedisHandlerNull.new({})
-      stomp_h.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
       r = NebRequest.new('accord', 'tom', nil, nil, stomp_h, rh)
+      stomp_h.insert_fake( Message.from_parts(nil, r.replyID, 'foo', 'bar', 'baz') )
 
       response = r.send
       expect( response ).to be_a NebulousStomp::Message

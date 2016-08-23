@@ -14,9 +14,9 @@ describe NebRequestNull do
 
   def disable(thing)
     NebulousStomp.init( :stompConnectHash => thing == :stomp ? {} : stomp_hash,
-                   :redisConnectHash => thing == :redis ? {} : redis_hash,
-                   :messageTimeout   => 5,
-                   :cacheTimeout     => 20 )
+                        :redisConnectHash => thing == :redis ? {} : redis_hash,
+                        :messageTimeout   => 5,
+                        :cacheTimeout     => 20 )
 
     NebulousStomp.add_target( :accord, 
                          :sendQueue      => "/queue/laplace.dev",
@@ -35,6 +35,7 @@ describe NebRequestNull do
   end
 
   let(:redis_hash) { {host: '127.0.0.1', port: 6379, db: 0} }
+
 
   before do
     disable(:nothing)
@@ -95,7 +96,7 @@ describe NebRequestNull do
 
     it "returns something from STOMP" do
       req = new_request('accord', 'foo')
-      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_stomp( Message.from_parts(nil, req.replyID, 'foo', 'bar', 'baz') )
       response = req.send_no_cache
 
       expect( response ).to be_a NebulousStomp::Message
@@ -124,7 +125,7 @@ describe NebRequestNull do
 
     it "returns a Message object from STOMP the first time" do
       req = new_request('accord', 'foo')
-      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_stomp( Message.from_parts(nil, req.replyID, 'foo', 'bar', 'baz') )
 
       response = req.send
       expect( response ).to be_a NebulousStomp::Message
@@ -133,7 +134,7 @@ describe NebRequestNull do
 
     it "returns the answer from the cache if there is one" do
       req = new_request('accord', 'foo')
-      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_stomp( Message.from_parts(nil, req.replyID, 'foo', 'bar', 'baz') )
       req.insert_fake_redis('xxx', {'verb' => 'frog'}.to_json)
       response = req.send
 
@@ -143,14 +144,14 @@ describe NebRequestNull do
 
     it "allows you to specify a message timeout" do
       req = new_request('accord', 'foo')
-      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_stomp( Message.from_parts(nil, req.replyID, 'foo', 'bar', 'baz') )
 
       expect{ req.send(3) }.not_to raise_exception
     end
 
     it "allows you to specify a message timeout & cache timeout" do
       req = new_request('accord', 'foo')
-      req.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      req.insert_fake_stomp( Message.from_parts(nil, req.replyID, 'foo', 'bar', 'baz') )
 
       expect{ req.send(3, 120) }.not_to raise_exception
     end
@@ -163,7 +164,7 @@ describe NebRequestNull do
     it 'still works if Redis is turned off in the config' do
       disable(:redis)
       r = new_request('accord', 'tom')
-      r.insert_fake_stomp( Message.from_parts('', '', 'foo', 'bar', 'baz') )
+      r.insert_fake_stomp( Message.from_parts(nil, r.replyID, 'foo', 'bar', 'baz') )
 
       response = r.send
       expect( response ).to be_a NebulousStomp::Message
