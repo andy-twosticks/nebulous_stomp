@@ -158,7 +158,6 @@ describe StompHandler do
 
     it "takes an initialization hash" do
       expect{ StompHandler.new(foo: 'bar') }.not_to raise_exception
-      expect{ StompHandler.new }.to raise_exception ArgumentError
     end
 
   end
