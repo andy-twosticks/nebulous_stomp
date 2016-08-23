@@ -17,11 +17,15 @@ module NebulousStomp
     ##
     # Initialise an instance of the handler by passing it the connection hash
     #
+    # If no hash is passed, we try and get it from Nebulous::Params
+    #
     # We use the optional testRedis parameter to mock connections to Redis, for
     # testing. It's probably of no use to anyone else.
     #
-    def initialize(connectHash, testRedis=nil)
-      @redis_hash = connectHash ? connectHash.dup : nil
+    def initialize(connectHash=nil, testRedis=nil)
+      @redis_hash   = connectHash ? connectHash.dup : nil
+      @redis_hash ||= Param.get(:redisConnectHash)
+
       @test_redis = testRedis 
       @redis      = nil
     end

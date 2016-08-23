@@ -110,10 +110,14 @@ module NebulousStomp
 
     ##
     # Initialise StompHandler by passing the parameter hash.
+    #
+    # If no hash is set we try and get it from NebulousStomp::Param.
     # ONLY set testClient when testing.
     #
-    def initialize(connectHash, testClient=nil)
-      @stomp_hash  = connectHash ? connectHash.dup : nil
+    def initialize(connectHash=nil, testClient=nil)
+      @stomp_hash   = connectHash ? connectHash.dup : nil
+      @stomp_hash ||= Param.get(:stompConnectHash)
+
       @test_client = testClient
       @client      = nil
     end
@@ -207,11 +211,13 @@ module NebulousStomp
     ##
     # As listen() but give up after yielding a single message, and only wait
     # for a set number of seconds before giving up anyway.
-    #--
-    # Ideally I'd like to DRY this and listen() up, but with this
-    # yield-within-a-thread stuff going on, I'm actually not sure how to do
-    # that safely.
-    #++
+    #
+    # The behaviour here is slightly different than listen(). If you return true from your block,
+    # the message will be consumed and the method will end.  Otherwise it will continue until it
+    # sees another message, or reaches the timeout.
+    #
+    # Put another way, since most things are truthy -- if you want to examine messages to find the
+    # right one, return false from the block to get another.
     #
     def listen_with_timeout(queue, timeout)
       return unless nebulous_on?
@@ -230,11 +236,13 @@ module NebulousStomp
         @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
 
           begin
-            unless msg.body == "boo"
-              yield Message.from_stomp(msg) 
-              done = true
+            if msg.body == "boo"
+              @client.ack(msg)
+            else
+              done = yield Message.from_stomp(msg) 
+              @client.ack(msg) if done
             end
-            @client.ack(msg)
+
           rescue =>e
             NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
           end

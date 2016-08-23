@@ -6,8 +6,9 @@ require 'nebulous_stomp'
 # It's really only here to double check that the Stomp gem hasn't moved the 
 # goalposts (again).
 #
-# In order for it to work, the JH RabbitMQ server has to be where we left it. 
-# So this test won't work for you out of the box, unless you are me.
+# In order for it to work, the JH RabbitMQ server has to be where we left it. And you need a
+# responder listening to /queue/nebulout.test for the 'ping' verb. So this test won't work for you
+# out of the box, unless you are me.
 #
 describe 'through test' do
 

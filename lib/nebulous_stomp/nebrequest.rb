@@ -18,18 +18,6 @@ module NebulousStomp
     # The target name as set up by call to Nebulous::add_target
     attr_reader :target
     
-    # The 'verb' part of the message
-    attr_reader :verb      
-    
-    # The 'parameters' part of the message
-    attr_reader :params    
-
-    # The 'description' part of the message
-    attr_reader :desc
-    
-    # The 'replyID' header to use in this message 
-    attr_reader :replyID
-
     # Message timeout in seconds
     attr_reader :mTimeout
 
@@ -73,21 +61,23 @@ module NebulousStomp
       NebulousStomp.logger.debug(__FILE__) {"New NebRequest for verb #{verb}"}
 
       @target        = target.to_s
-      @verb          = verb.to_s
-      @params        = params.nil? ? nil : params.to_s
-      @desc          = desc.nil?   ? nil : desc.to_s
       @stomp_handler = stompHandler 
       @redis_handler = redisHandler 
       @requestQ      = nil
       @responseQ     = nil
       @message       = nil
-      @replyID       = nil
       @mTimeout      = 0
       @cTimeout      = 0
+
+      xverb   = verb.to_s
+      xparams = params.nil? ? nil : params.to_s
+      xdesc   = desc.nil?   ? nil : desc.to_s
 
       @redis_handler ||= RedisHandler.new( Param.get(:redisConnectHash) )
       @stomp_handler ||= StompHandler.new( Param.get(:stompConnectHash) )
 
+      neb_setup if nebulous_on?
+      @message = Message.from_parts(@responseQ, nil, xverb, xparams, xdesc)
       neb_connect if nebulous_on?
     end
 
@@ -112,7 +102,7 @@ module NebulousStomp
 
       # If we've lost the connection then reconnect but *keep replyID*
       @stomp_handler.stomp_connect unless @stomp_handler.connected?
-      @replyID = @stomp_handler.calc_reply_id if @replyID.nil? 
+      @message.reply_id = @stomp_handler.calc_reply_id if @message.reply_id.nil? 
 
       neb_qna(mTimeout)
 
@@ -201,14 +191,23 @@ module NebulousStomp
     end
 
 
+    #
+    # Some of our attributes are actually on Message
+    #
+
+    def verb;    @message ? @message.verb     : nil; end
+    def params;  @message ? @message.params   : nil; end
+    def desc;    @message ? @message.desc     : nil; end
+    def replyID; @message ? @message.reply_id : nil; end
+
+
     private
 
 
     ##
     # Connect to STOMP etc and do initial setup
-    # Called automatically by initialize, if Nebulous is 'on' in the config.
     #
-    def neb_connect
+    def neb_setup
       targetHash = Param.get_target(@target)
       raise NebulousError, "Unknown target #{target}" if targetHash.nil?
 
@@ -216,11 +215,16 @@ module NebulousStomp
       @mTimeout  = targetHash[:messageTimeout] || Param.get(:messageTimeout)
       @requestQ  = targetHash[:sendQueue]
       @responseQ = targetHash[:receiveQueue]
-      @message   = Message.from_parts(@responseQ, nil, verb, params, desc)
 
+      self
+    end
+
+
+    # Called automatically by initialize, if Nebulous is 'on' in the config.
+    #
+    def neb_connect
       @stomp_handler.stomp_connect
-      @replyID = @stomp_handler.calc_reply_id
-
+      @message.reply_id = @stomp_handler.calc_reply_id 
       self
     end
 
@@ -236,7 +240,12 @@ module NebulousStomp
 
       response = nil
       @stomp_handler.listen_with_timeout(@responseQ, mTimeout) do |msg|
-        response = msg
+        if replyID && msg.in_reply_to != replyID
+          false
+        else
+          response = msg
+          true
+        end
       end
 
       response
