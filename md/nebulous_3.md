@@ -70,10 +70,10 @@ Request-response
       # Process the message here
 
       # Protocol message for an error
-      stomp_handler.send_message msg.respond_error($!)
+      stomp_handler.send_message *msg.respond_error($!)
 
       # Protocol message for success
-      stomp_handler.send_message msg.respond_success
+      stomp_handler.send_message *msg.respond_success
 
       # Non-protocol message body reply -- you can't!
     end
@@ -90,15 +90,15 @@ Request-response
       # Process the message here
 
       # Protocol message for an error
-      listener.reply msg.respond_with_protocol('error', nil, 'Foo!!')
+      listener.reply *msg.respond_with_protocol('error', nil, 'Foo!!')
       # or
-      listener.reply msg.respond_with_error($!)
+      listener.reply *msg.respond_with_error($!)
 
       # Protocol message for success
-      listener.reply msg.respond_with_success
+      listener.reply *msg.respond_with_success
 
       # Non-protocol message body reply
-      listener.reply msg.respond(body)
+      listener.reply *msg.respond(body)
 
     end
 
@@ -106,9 +106,10 @@ Request-response
   which case it uses the request queue. But that's it. Conversely we should ensure that we don't
   NEED to set up targets in the R-R use case.
 
-* Message.respond_whatever changes to Message.respond_with_whatever, for clarity. These methods now
-  return new Message objects. They should be trivial wrappers for Message.new, or at worst, some
-  other static creation method. (Message.in_reply_to is hopefully redundant?)
+* Message.respond_whatever changes to Message.respond_with_whatever, for clarity. As now these
+  messages return [queue, message] where message is a new Message object. They should be trivial
+  wrappers for Message.new, or at worst, some other static creation method. (Message.in_reply_to is
+  hopefully redundant?)
 
 * New Listener class wraps up StompHandler functionality for the R-R use case. consume yields each
   message on the queue; reply takes a Message and sends it.  Seems as if Listener and Request needs
@@ -188,6 +189,9 @@ Summary of Changes
 * NebRequest to be removed.
 
 * NebulousStomp to have new redis_get, redis_set methods as above.
+
+* To facilitate testing of Listener, StompHandlerNull needs to support multiple fake messages;
+  StompHandlerNull.listen should return each and then stop.
 
 * All of the above needs test coverage, of course. through_test needs changing to reflect the new
   API.

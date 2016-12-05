@@ -37,8 +37,7 @@ module NebulousStomp
       def body_to_hash(headers, body, contentType=nil)
         hdrs = headers || {}
 
-        raise ArgumentError, "headers is not a hash" \
-          unless hdrs.kind_of? Hash
+        raise ArgumentError, "headers is not a hash" unless hdrs.kind_of? Hash
 
         type = contentType \
                || hdrs["content-type"] || hdrs[:content_type] \
