@@ -88,11 +88,11 @@ describe Message do
       expect( msg_new.content_type ).to match(/json$/i)
     end
 
-=begin
-    it "is fine with messages not having a replyTo"
-
-    it "is fine with messages not having a verb"
-=end
+    it "is fine with messages not having a replyTo or a verb" do
+      expect{ Message.new(verb: 'thing'              ) }.not_to raise_exception
+      expect{ Message.new(replyTo: 'foo', body: 'bar') }.not_to raise_exception
+      expect{ Message.new(body: 'bar')                 }.not_to raise_exception
+    end
 
   end
   ##
@@ -100,47 +100,27 @@ describe Message do
 
   describe 'Message.in_reply_to' do
 
-=begin
-    it "requires a message to reply to and a hash" 
+    it "requires a message to reply to and a hash" do
+      expect{ Message.in_reply_to()             }.to raise_error ArgumentError
+      expect{ Message.in_reply_to("foo")        }.to raise_error ArgumentError
+      expect{ Message.in_reply_to(msg_new2)     }.to raise_error ArgumentError
+      expect{ Message.in_reply_to(msg_new2, 14) }.to raise_error ArgumentError
 
-    it "raises ArgumentError if the initial message has no reply_id"
-
-    it "sets the content type from the initial message if not set" 
-
-    it "sets the in_reply_to to the initial message reply_id" 
-=end
-
-    let(:msg) do 
-      Message.in_reply_to(msg_new2, 'Buffy', 'Willow', 'Xander', 'Ripper')
+      expect{ Message.in_reply_to(msg_new2, body: "foo") }.not_to raise_error
     end
 
-
-    it 'requires another Message object and a verb' do
-      expect{ Message.in_reply_to('foo') }.to raise_exception ArgumentError
-
-      expect{ Message.in_reply_to('foo', 'bar') }.
-        to raise_exception ArgumentError
-
-      expect{ Message.in_reply_to(msg_new, 'bar') }.not_to raise_exception
+    it "raises ArgumentError if the initial message has no reply_id" do
+      expect{ Message.in_reply_to(msg_stomp, verb: 'foo') }.to raise_exception ArgumentError
     end
 
-    it 'returns a fresh Message object' do
-      expect( msg ).to be_a_kind_of(Message)
-      expect( msg ).not_to eq(msg_new)
-    end
-
-    it 'sets Protocol attributes' do
-      expect( msg.verb     ).to eq 'Buffy'
-      expect( msg.params   ).to eq 'Willow'
-      expect( msg.desc     ).to eq 'Xander'
-      expect( msg.reply_to ).to eq 'Ripper'
-
-      # NB the reply_id (message ID) not the reply_to (the queue)
-      expect( msg.in_reply_to ).to eq 42 
-    end
-
-    it 'sets the content type from the source message' do
+    it "sets the content type from the initial message" do
+      msg = Message.in_reply_to(msg_new2, body: 'foo')
       expect( msg.content_type ).to eq msg_new.content_type
+    end
+
+    it "sets the in_reply_to to the initial message reply_id" do
+      msg = Message.in_reply_to(msg_new2, body: 'foo')
+      expect( msg.in_reply_to ).to eq msg_new2.reply_id
     end
 
   end
@@ -385,7 +365,7 @@ describe Message do
         not_to raise_exception
 
       mess = Message.from_cache(msg_cache.to_cache.to_json)
-      expect(mess.to_cache).to eq symbolise(json_hash)
+      expect(mess.to_cache).to include symbolise(json_hash)
     end
       
 
@@ -410,46 +390,32 @@ describe Message do
   ##
 
 
-  describe "#body_to_h" do
+  describe "#body" do
 
-    context "if the body is in JSON" do
-
-      it "returns a hash"  do
-        x = {}
-        x[:stompHeaders] = {}
-        x[:stompBody]    = @datH.to_json # JSONd twice?
-        x[:contentType]  = "JSON"
-
-        nr = Message.from_cache(x.to_json)
-        expect( nr.body_to_h ).to eq @datH
-      end
-
+    it "returns a hash if the stomp body is in JSON" do
+      nr = Message.new(stompBody: new_hash.to_json, contentType: "JSON")
+      expect( symbolise nr.body ).to eq new_hash
     end
 
-    context "If the body is not in JSON" do
-      it "returns nil" do
+    it "returns a hash if the stomp body is not in JSON" do
+      x = new_hash.map{|k,v| "#{k}: #{v}" }.join("\n")
 
-        x = {}
-        x["body"] = @datS
-        x["content-type"] = "text"
-
-        nr = Message.from_cache(x.to_json)
-        expect( nr.body_to_h ).to be_nil
-
-      end
+      nr = Message.new(stompBody: x, contentType: "text")
+      expect( symbolise nr.body ).to eq new_hash
     end
 
-    context "If the body is nil(!)" do
-      it "returns nil" do
-        x = {}
-        x["body"] = nil
-        x["content-type"] = "JSON"
+    it "returns nil if the stomp body is nil(!)" do
+      nr = Message.new(stompBody: nil, contentType: "JSON")
+      expect{ nr.body }.to_not raise_exception
+      expect( nr.body ).to be_nil
+    end
 
-        nr = Message.from_cache(x.to_json)
+    it "returns the body if given and no stomp_body given" do
+      nr = Message.new(body: "foo")
+      expect( nr.body ).to eq "foo"
 
-        expect{ nr.body_to_h }.to_not raise_exception
-        expect( nr.body_to_h ).to be_nil
-      end
+      nr = Message.new(stompBody: new_hash.to_json, body: "foo", contentType: "JSON")
+      expect( symbolise nr.body ).to eq new_hash
     end
 
   end
@@ -591,7 +557,7 @@ describe Message do
       _,m = msg_cache.respond_with_error(err, :foo)
       expect( m ).to be_a_kind_of Message
       expect( m.verb ).to eq 'error'
-      expect( m.params ).to eq "foo"
+      expect( m.params ).to eq ["foo"]
       expect( m.desc ).to eq err.message
     end
 
@@ -643,7 +609,6 @@ describe Message do
   ##
   
   
-=begin
   describe '#respond' do
 
     let(:msg) { msg_cache.respond("desmond") }
@@ -675,7 +640,6 @@ describe Message do
 
   end
   ##
-=end
   
 
 end

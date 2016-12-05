@@ -19,7 +19,7 @@ module NebulousStomp
     def_delegators :@header, :stomp_headers, :reply_to, :in_reply_to, :reply_id, :content_type,
                              :reply_id=, :content_is_json?, :headers_for_stomp
 
-    def_delegators :@body, :stomp_body, :verb, :params, :desc,
+    def_delegators :@body, :stomp_body, :body, :verb, :params, :desc,
                            :body_to_h, :protocol_json, :body_for_stomp
 
     alias :parameters  :params
@@ -32,27 +32,20 @@ module NebulousStomp
       # Build a Message that replies to an existing Message
       #
       # * msg - the Nebulous::Message that you are replying to
-      # * verb, params, desc - the new message Protocol 
+      # * args - hash as per Message.new
       #
-      def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)
-        raise ArgumentError, 'bad message' unless msg.kind_of? Message
+      # See also #respond, #respond_with_protocol, etc, etc.
+      #
+      def in_reply_to(msg, args)
+        raise ArgumentError, 'bad message'             unless msg.kind_of? Message
+        raise ArgumentError, 'bad hash'                unless args.kind_of? Hash
+        raise ArgumentError, 'message has no reply ID' unless msg.reply_id
         NebulousStomp.logger.debug(__FILE__){ "New message reply" }
 
-        p = 
-          case params
-            when NilClass then nil
-            when Array    then params.dup
-            else params.to_s
-          end
+        hash = { inReplyTo:   msg.reply_id,
+                 contentType: msg.content_type }
 
-        m = msg.clone
-        self.new( replyTo:     replyTo.to_s,
-                  verb:        verb.to_s,
-                  params:      p,
-                  desc:        desc.to_s,
-                  inReplyTo:   m.reply_id,
-                  contentType: m.content_type )
-
+        self.new(args.merge hash)
       end
       
       ##
@@ -123,6 +116,7 @@ module NebulousStomp
     # Currently this looks like:
     #    { stompHeaders: @stomp_headers,
     #      stompBody:    @stomp_body,
+    #      body:         @body
     #      verb:         @verb,
     #      params:       @params,
     #      desc:         @desc,
@@ -130,6 +124,9 @@ module NebulousStomp
     #      replyId:      @reply_id,
     #      inReplyTo:    @in_reply_to,
     #      contentType:  @content_type }
+    #
+    # Note that if :stompBody is set then :body will be nil. This is to attempt to reduce
+    # duplication of what might be a rather large string.
     #
     def to_cache
       @header.to_cache.merge @body.to_cache
@@ -140,18 +137,17 @@ module NebulousStomp
     #
     def respond_with_protocol(verb, params=[], desc="")
       raise NebulousError, "Don't know which queue to reply to" unless reply_to
-      NebulousStomp.logger.info(__FILE__) { "Responded to #{self} with '#{verb}' verb" }
       
-      [ reply_to, Message.in_reply_to(self, verb, params, desc) ]
+      hash = {verb: verb, params: params, desc: desc}
+      [ reply_to, Message.in_reply_to(self, hash) ]
     end
 
     ##
     # Repond with a message (presumably a custom one that's non-Protocol)
     #
-    def respond(message)
+    def respond(body)
       raise NebulousError, "Don't know which queue to reply to" unless reply_to
-      NebulousStomp.logger.info(__FILE__) { "Responded to #{self} with message #{message}" }
-      # bamf
+      [ reply_to, Message.in_reply_to(self, body: body) ]
     end
 
     ##
@@ -162,9 +158,7 @@ module NebulousStomp
     #
     def respond_with_success
       raise NebulousError, "Don't know which queue to reply to" unless reply_to
-      NebulousStomp.logger.info(__FILE__) { "Responded to #{self} with 'success' verb" }
-
-      [ reply_to, Message.in_reply_to(self, 'success') ]
+      respond_with_protocol('success')
     end
 
     alias :respond_success :respond_with_success # old name
@@ -179,10 +173,7 @@ module NebulousStomp
     #
     def respond_with_error(err, fields=[])
       raise NebulousError, "Don't know which queue to reply to" unless reply_to
-      NebulousStomp.logger.info(__FILE__) { "Responded to #{self} with 'error': #{err}" }
-
-      reply = Message.in_reply_to(self, 'error', fields, err.to_s)
-      [ reply_to, reply ]
+      respond_with_protocol('error', Array(fields).flatten.map(&:to_s), err.to_s)
     end
 
     alias :respond_error :respond_with_error # old name

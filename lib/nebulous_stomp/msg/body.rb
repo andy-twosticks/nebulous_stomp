@@ -12,13 +12,16 @@ module NebulousStomp
     #
     class Body
 
-      # Might be nil: only caught on messages that came directly from STOMP
+      # Might be nil: only caught on messages that came directly from STOMP.
       attr_reader :stomp_body
 
       # The Nebulous Protocol
       # Note that if you happen to pass an array as @params, it's actually
       # writable, which is not ideal.
       attr_reader :verb, :params, :desc
+
+      # Will be a hash for messages that follow The Protocol; anything at all otherwise.
+      attr_reader :body
 
       ##
       # is_json should be a boolean, true if the body is JSON-encoded.
@@ -27,6 +30,7 @@ module NebulousStomp
       def initialize(is_json, hash)
         @is_json    = !!is_json
         @stomp_body = hash[:stompBody]
+        @body       = hash[:body]
         @verb       = hash[:verb]
         @params     = hash[:params]
         @desc       = hash[:desc]
@@ -37,12 +41,16 @@ module NebulousStomp
       ##
       # Output a the body part of the hash for serialization to the cache.
       #
+      # Since the body could be quite large we only set :body if there is no @stomp_body. We
+      # recreate the one from the other anyway.
+      #
       def to_cache
         { stompBody: @stomp_body,
+          body:      @stomp_body ? nil : body,
           verb:      @verb,
           params:    @params.kind_of?(Enumerable) ? @params.dup : @params,
           desc:      @desc }
-
+        
       end
 
       ##
@@ -56,18 +64,6 @@ module NebulousStomp
         else
           hash.map {|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
         end
-      end
-
-      ##
-      # :call-seq:
-      #   message.body_to_h -> (Hash || nil)
-      #
-      # If the body is in JSON, return a hash.
-      # If body is nil, or is not JSON, then return nil; don't raise an exception
-      #
-      def body_to_h
-        hash = body_to_hash
-        hash == {} ? nil : hash
       end
 
       ##
@@ -97,40 +93,41 @@ module NebulousStomp
       ##
       # Fill all the other attributes, if you can, from @stomp_body.
       #
-      # BAMF - we need the content type from the header!
-      #
       def fill_from_stomp
-        return unless @stomp_body && !@stomp_body.empty?
-        raise "body is not a string, something is very wrong here!" \
-          unless @stomp_body.kind_of? String
+        @body = parse_stomp_body
 
-        # decode the body, which should either be a JSON string or a series of
-        # text fields. And use the body to set Protocol attributes.
-        h = body_to_hash
+        if @body && !@body.empty?
+          @verb   ||= @body["verb"]
+          @params ||= @body["parameters"]  || @body["params"]
+          @desc   ||= @body["description"] || @body["desc"]
 
-        @verb   ||= h["verb"]
-        @params ||= h["parameters"]  || h["params"]
-        @desc   ||= h["description"] || h["desc"]
-
-        # Assume that if verb is missing, the other two are just part of a
-        # response which has nothing to do with the protocol
-        @params = @desc = nil unless @verb
+          # Assume that if verb is missing, the other two are just part of a
+          # response which has nothing to do with the protocol
+          @params = @desc = nil unless @verb
+        end
 
         self
       end
 
-      def body_to_hash
-        @is_json ? body_to_hash_json : body_to_hash_text
+      def parse_stomp_body
+        h = (@is_json ? stomp_body_from_json : stomp_body_from_text)
+
+        if h.nil? || h == {}
+          @stomp_body || @body 
+        else
+          h
+        end
       end
 
-      def body_to_hash_json
+      def stomp_body_from_json
         JSON.parse(@stomp_body)
       rescue JSON::ParserError, TypeError
         {}
       end
 
       # We assume that text looks like STOMP headers, or nothing
-      def body_to_hash_text
+      def stomp_body_from_text
+
         hash = {}
         @stomp_body.to_s.split("\n").each do |line|
           k,v = line.split(':', 2).each{|x| x.strip! }
