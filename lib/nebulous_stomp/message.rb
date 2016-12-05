@@ -40,7 +40,8 @@ module NebulousStomp
         raise ArgumentError, 'bad message'             unless msg.kind_of? Message
         raise ArgumentError, 'bad hash'                unless args.kind_of? Hash
         raise ArgumentError, 'message has no reply ID' unless msg.reply_id
-        NebulousStomp.logger.debug(__FILE__){ "New message reply" }
+
+        NebulousStomp.logger.debug(__FILE__){ "New message in reply to #{msg}" }
 
         hash = { inReplyTo:   msg.reply_id,
                  contentType: msg.content_type }
@@ -92,7 +93,7 @@ module NebulousStomp
     #
     # There are three ways that a message could get created:
     #
-    #     1. The user could create one.
+    #     1. The user could create one directly.
     #
     #     2. A message could be created from an incoming STOMP message, in which case we should
     #        call Message.from_stomp to create it.

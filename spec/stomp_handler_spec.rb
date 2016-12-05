@@ -265,7 +265,7 @@ describe StompHandler do
     # We're kind of navel gazing here because send_message is just one line: a
     # call to client.publish. Still, call it a warming up exercise....
     
-    let(:mess) { NebulousStomp::Message.from_parts(nil, nil, 'foo', nil, nil) }
+    let(:mess) { NebulousStomp::Message.new(verb: 'foo', params: nil, desc: nil) }
 
     before do
       handler.stomp_connect
