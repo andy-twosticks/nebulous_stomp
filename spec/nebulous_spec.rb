@@ -66,8 +66,13 @@ describe NebulousStomp do
   describe 'NebulousStomp.add_target' do
 
     it 'calls Param.add_target' do
-      t1 = :foo; t2 = {bar: 'baz'}
-      expect(param).to receive(:add_target).with(t1, t2)
+      t1 = :foo; t2 = {sendQueue: "foo", receiveQueue: "bar"}
+      expect(param).to receive(:add_target) do |tn, t|
+        expect(tn).to eq t1
+        expect(t.send_queue).to eq t2[:sendQueue]
+        expect(t.receive_queue).to eq t2[:receiveQueue]
+      end
+
       NebulousStomp.add_target(t1, t2)
     end
 

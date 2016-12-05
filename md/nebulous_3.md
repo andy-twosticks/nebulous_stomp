@@ -186,6 +186,9 @@ Summary of Changes
   creator static methods; it should be possible to create a Message without a reply_to, or which
   does not follow The Protocol; respond_blah becomes respond_with_blah and returns a Message.
 
+* Message.in_reply_to now takes a Message and a hash. Message.from_parts is no longer a thing. New
+  methods #respond and respond_protocol.
+
 * NebRequest to be removed.
 
 * NebulousStomp to have new redis_get, redis_set methods as above.

@@ -1,3 +1,6 @@
+require_relative 'target'
+
+
 module NebulousStomp
 
 
@@ -6,7 +9,6 @@ module NebulousStomp
   #
   module Param
     extend self
-
 
     # Default parameters hash
     ParamDefaults = { stompConnectHash: {},
@@ -20,7 +22,6 @@ module NebulousStomp
     TargetDefaults = { sendQueue:      nil,
                        receiveQueue:   nil,
                        messageTimeout: nil }
-
 
     ##
     # Set the initial parameter string. This also has the effect of resetting
@@ -39,32 +40,21 @@ module NebulousStomp
       @params = ParamDefaults.merge(p)
     end
 
-
     ##
     # Add a Nebulous target.  Raises NebulousError if anything looks screwy.
     #
     # Parameters:
     #  n -- target name
-    #  t -- hash, which must follow the pattern set by Param::TargetDefaults
+    #  t -- a Target
     #
     # Used only by Nebulous::init
     #
     def add_target(n, t)
-      raise NebulousError, "Invalid target hash" unless t.kind_of?(Hash)
-
-      validate(TargetDefaults, t, "Unknown target hash")
-
-      raise NebulousError, "Config Problem - Target missing 'send'" \
-        if t[:sendQueue].nil?
-
-      raise NebulousError, "Config Problem - Target missing 'receive'" \
-        if t[:receiveQueue].nil?
+      raise NebulousError, "Invalid target" unless t.kind_of?(Target)
 
       @params ||= ParamDefaults
-      @params[:targets][n.to_sym] = TargetDefaults.merge(t)
+      @params[:targets][n.to_sym] = t
     end
-
-
 
     ##
     # Set a logger instance
@@ -74,12 +64,10 @@ module NebulousStomp
       @logger = lg
     end
 
-
     ##
     # Get the logger instance
     #
     def get_logger; @logger; end
-
 
     ##
     # Get the whole parameter hash. Probably only useful for testing.
@@ -88,7 +76,6 @@ module NebulousStomp
       @params
     end
 
-
     ##
     # Get a the value of the parameter with the key p.
     #
@@ -96,7 +83,6 @@ module NebulousStomp
       @params ||= ParamDefaults
       @params[p.to_sym]
     end
-
 
     ##
     # Given a target name, return the corresponding target hash 
@@ -109,7 +95,6 @@ module NebulousStomp
       return x
     end
 
-
     ##
     # Raise an exception if a hash has any keys not found in an exemplar
     #
@@ -120,7 +105,6 @@ module NebulousStomp
         raise NebulousError, "#{message} key '#{k}'" unless exemplar.include?(k)
       end
     end
-
 
     ##
     # reset all parameters -- probably only useful for testing

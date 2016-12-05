@@ -1,3 +1,4 @@
+=begin
 require 'spec_helper'
 
 include NebulousStomp
@@ -236,4 +237,4 @@ describe NebRequest do
 
 
 end # of NebRequest
-
+=end
