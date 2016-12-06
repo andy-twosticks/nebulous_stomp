@@ -115,7 +115,7 @@ module NebulousStomp
     #
     def initialize(connectHash=nil, testClient=nil)
       @stomp_hash   = connectHash ? connectHash.dup : nil
-      @stomp_hash ||= Param.get(:stompConnectHash)
+      #@stomp_hash ||= Param.get(:stompConnectHash)
 
       @test_client = testClient
       @client      = nil
