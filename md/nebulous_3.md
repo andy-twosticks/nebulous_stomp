@@ -175,7 +175,7 @@ Summary of Changes
 
 * New Request class containing the Q&A logic from NebRequest: accepts a Message on creation;
   returns another Message for the response. Should allow injection via attr_writer for testing.
-  Maybe we don't need a RequestNull?
+  Maybe we don't need a RequestNull? *bamf*
 
 * New Listener class wraps StompHandler for the request-response use-case: accepts a queue (or a
   target) when created; consume_messages method yields each message from the queue, consuming it;
@@ -189,14 +189,14 @@ Summary of Changes
   does not follow The Protocol; respond_blah becomes respond_with_blah and returns a Message.
 
 * Message.in_reply_to now takes a Message and a hash. Message.from_parts is no longer a thing. New
-  methods #respond and respond_protocol.
+  methods #respond and respond_protocol. to_cache is now to_h.
 
-* NebRequest to be removed.
+* NebRequest to be removed. *bamf*
 
-* NebulousStomp to have new redis_get, redis_set methods as above.
+* NebulousStomp to have new redis_get, redis_set methods as above. *bamf*
 
 * To facilitate testing of Listener, StompHandlerNull needs to support multiple fake messages;
-  StompHandlerNull.listen should return each and then stop.
+  StompHandlerNull.listen should return each and then stop. *bamf*
 
 * All of the above needs test coverage, of course. through_test needs changing to reflect the new
   API.

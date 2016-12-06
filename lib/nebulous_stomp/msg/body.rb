@@ -44,7 +44,7 @@ module NebulousStomp
       # Since the body could be quite large we only set :body if there is no @stomp_body. We
       # recreate the one from the other anyway.
       #
-      def to_cache
+      def to_h
         { stompBody: @stomp_body,
           body:      @stomp_body ? nil : body,
           verb:      @verb,

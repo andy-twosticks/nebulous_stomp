@@ -341,10 +341,10 @@ describe Message do
   ##
 
 
-  describe '#to_cache' do
+  describe '#to_h' do
 
     it 'returns the message as a hash' do
-      hash = msg_new.to_cache
+      hash = msg_new.to_h
 
       expect( hash ).to be_a_kind_of Hash
       expect( hash ).to include( replyTo:   'Daphne',
@@ -357,15 +357,15 @@ describe Message do
     end
 
     it 'always returns all the keys' do
-      expect( msg_stomp.to_cache.keys ).to include(*json_hash.keys)
+      expect( msg_stomp.to_h.keys ).to include(*json_hash.keys)
     end
 
     it "returns a hash that Message.from_cache doesn''t freak out over" do
-      expect{ Message.from_cache(msg_cache.to_cache.to_json) }.
+      expect{ Message.from_cache(msg_cache.to_h.to_json) }.
         not_to raise_exception
 
-      mess = Message.from_cache(msg_cache.to_cache.to_json)
-      expect(mess.to_cache).to include symbolise(json_hash)
+      mess = Message.from_cache(msg_cache.to_h.to_json)
+      expect(mess.to_h).to include symbolise(json_hash)
     end
       
 

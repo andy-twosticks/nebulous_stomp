@@ -50,7 +50,7 @@ module NebulousStomp
       ##
       # Output a the header part of the hash for serialization to the cache.
       #
-      def to_cache
+      def to_h
         { stompHeaders: @stomp_headers,
           replyTo:      @reply_to,
           replyId:      @reply_id,

@@ -23,6 +23,7 @@ module NebulousStomp
     class << self
 
 
+=begin
       ##
       # Parse stomp headers & body and return body as something Ruby-ish.
       # It might not be a hash, in fact -- it could be an array of hashes.
@@ -64,6 +65,7 @@ module NebulousStomp
 
         hash
       end
+=end
 
 
       ##

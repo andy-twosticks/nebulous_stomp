@@ -77,8 +77,8 @@ describe Param do
       Param.add_target(target1)
     end
 
-    it "throws an exception if you ask for a target it doesn't have" do
-      expect{ Param.get_target(:two) }.to raise_exception(NebulousError)
+    it "returns nil if you ask for a target it doesn't have" do
+      expect( Param.get_target(:two) ).to be_nil
     end
 
     it "returns the Target corresponding to the name" do

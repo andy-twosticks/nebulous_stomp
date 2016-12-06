@@ -89,10 +89,7 @@ module NebulousStomp
     #
     def get_target(name)
       t = Param.get(:targets)
-      x = (t && t.kind_of?(Hash)) ? t[name.to_sym] : nil
-
-      raise NebulousError, "Config problem - unknown target #{name}" if x.nil?
-      return x
+      (t && t.kind_of?(Hash)) ? t[name.to_s.to_sym] : nil
     end
 
     ##

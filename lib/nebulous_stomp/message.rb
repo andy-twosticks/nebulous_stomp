@@ -13,6 +13,9 @@ module NebulousStomp
   # A class to encapsulate a Nebulous message (which is built on top of a
   # STOMP message)
   #
+  # This class is entirely read-only, except for reply_id, which is set by StompHandler when the
+  # message is sent.
+  #
   class Message
     extend Forwardable
 
@@ -129,9 +132,11 @@ module NebulousStomp
     # Note that if :stompBody is set then :body will be nil. This is to attempt to reduce
     # duplication of what might be a rather large string.
     #
-    def to_cache
-      @header.to_cache.merge @body.to_cache
+    def to_h
+      @header.to_h.merge @body.to_h
     end
+
+    alias :to_cache :to_h  # old name
 
     ##
     # Repond with a message using The Protocol
