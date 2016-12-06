@@ -49,11 +49,11 @@ module NebulousStomp
     #
     # Used only by Nebulous::init
     #
-    def add_target(n, t)
+    def add_target(t)
       raise NebulousError, "Invalid target" unless t.kind_of?(Target)
 
       @params ||= ParamDefaults
-      @params[:targets][n.to_sym] = t
+      @params[:targets][t.name.to_sym] = t
     end
 
     ##

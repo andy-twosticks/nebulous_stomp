@@ -6,7 +6,7 @@ include NebulousStomp
 
 describe Listener do
 
-  let(:target1)   { Target.new(sendQueue: "alpha", receiveQueue: "beta") }
+  let(:target1)   { Target.new(name: "foo", sendQueue: "alpha", receiveQueue: "beta") }
   let(:listener1) { Listener.new(target1) }
   let(:handler)   { StompHandlerNull.new }
 

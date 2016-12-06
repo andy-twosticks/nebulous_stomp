@@ -9,7 +9,7 @@ describe Param do
   before      { Param.reset }
   after(:all) { Param.reset }
 
-  let(:target1) { Target.new(receiveQueue: '/queue/foo', sendQueue: '/queue/bar') }
+  let(:target1) { Target.new(name: 'foo', receiveQueue: '/queue/foo', sendQueue: '/queue/bar') }
 
 
   describe "Param.set" do
@@ -38,12 +38,12 @@ describe Param do
   describe "Param.add_target" do
 
     it "rejects a target that's not a Target" do
-      expect { Param.add_target(:foo, {:notAValidThing => 14}) }.to raise_exception NebulousError
+      expect { Param.add_target(:notAValidThing => 14) }.to raise_exception NebulousError
     end
 
     it 'works even when set has not been called' do
       Param.reset
-      expect{ Param.add_target(:foo, target1) }.not_to raise_exception
+      expect{ Param.add_target(target1) }.not_to raise_exception
     end
 
   end # of Param:add_target
@@ -74,20 +74,20 @@ describe Param do
   describe "Param.get_target" do
 
     before do
-      Param.add_target(:one, target1)
+      Param.add_target(target1)
     end
 
     it "throws an exception if you ask for a target it doesn't have" do
       expect{ Param.get_target(:two) }.to raise_exception(NebulousError)
     end
 
-    it "returns the target hash corresponding to the name" do
-      expect( Param.get_target(:one) ).to eq target1
+    it "returns the Target corresponding to the name" do
+      expect( Param.get_target(:foo) ).to eq target1
     end
 
     it 'does not freak out if set() was never called' do
       Param.reset
-      expect{ Param.get_target(:one) }.not_to raise_exception
+      expect{ Param.get_target(:foo) }.not_to raise_exception
     end
       
   end # of get_target

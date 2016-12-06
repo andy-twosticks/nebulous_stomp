@@ -171,6 +171,8 @@ Summary of Changes
 * New Target class; Param.get_target and get_all now returns Target objects rather than a hash for
   each target; New method NebulousStomp.get_target wraps Param.get_target.
 
+* NebulousStomp.add_target now returns the Target object created.
+
 * New Request class containing the Q&A logic from NebRequest: accepts a Message on creation;
   returns another Message for the response. Should allow injection via attr_writer for testing.
   Maybe we don't need a RequestNull?

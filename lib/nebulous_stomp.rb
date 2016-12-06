@@ -62,7 +62,7 @@ module NebulousStomp
   # Thrown when we can't connect to STOMP or the connection is lost somehow
   class ConnectionError < NebulousError; end
 
-
+  ##
   # :call-seq: 
   # Nebulous.init(paramHash) -> (nil)
   #
@@ -76,28 +76,37 @@ module NebulousStomp
     return nil
   end
 
-
+  ##
   # :call-seq: 
-  # Nebulous.add_target(name, targetHash) -> (nil)
+  # Nebulous.add_target(name, targetHash) -> Target
   #
   # Add a nebulous target called <name> with a details as per <targetHash>.
   #
   # <targetHash> must contain a send queue and a receive queue, or a
-  # NebulousError will be thrown. Have a look in Nebulous::Param for the
+  # NebulousError will be thrown. Have a look in NebulousStomp::Target for the
   # default hash you are overriding here.
   #
-  def self.add_target(name, targetHash) # -> nil
-    Param.add_target(name, Target.new(targetHash) )
-    return nil
+  def self.add_target(name, targetHash) 
+    t = NebulousStomp::Target.new targetHash.merge(name: name)
+    Param.add_target(t)
+    t
   end
 
+  ##
+  # :call-seq:
+  #   Nebulous.get_target(name) # -> Target
+  #
+  # Given a target name, return the Target object.
+  #
+  def self.get_target(name)
+    Param.get_target(name)
+  end
 
   ##
   # Set an instance of Logger to log stuff to.
   def self.set_logger(logger)
     Param.set_logger(logger)
   end
-
 
   ##
   # :call-seq:
@@ -111,7 +120,6 @@ module NebulousStomp
     Param.get_logger || Logger.new( DevNull.new )
   end
 
-
   ##
   # :call-seq:
   #     Nebulous.on? -> Boolean
@@ -122,7 +130,6 @@ module NebulousStomp
     h = Param.get(:stompConnectHash)
     !(h.nil? || h.empty?)
   end
-
 
   ##
   # :call-seq:
