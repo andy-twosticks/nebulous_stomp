@@ -87,7 +87,7 @@ describe RedisHelper do
     end
 
     it "raises NebulousError if the key does not exist in the store" do
-      expect{ helper.del(:bark) }.to raise_error NebulousError
+      expect{ helper.del(:bark) }.to raise_error ArgumentError
     end
     
   end

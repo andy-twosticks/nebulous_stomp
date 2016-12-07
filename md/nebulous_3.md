@@ -199,7 +199,7 @@ Summary of Changes
 
 * NebRequest to be removed. *bamf*
 
-* NebulousStomp to have new redis_get, redis_set methods as above. *bamf*
+* new RedisHelper ckass to have new get, set methods as above.
 
 * To facilitate testing of Listener, StompHandlerNull needs to support multiple fake messages;
   StompHandlerNull.listen should return each and then stop. *bamf*

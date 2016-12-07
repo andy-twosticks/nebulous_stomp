@@ -38,7 +38,8 @@ module NebulousStomp
 
     def del(key)
       ensure_connected
-      redis_handler.del(key.to_s)
+      num = redis_handler.del(key.to_s)
+      fail ArgumentError, "Unknown key, cannot delete" if num == 0
     end
 
     def quit

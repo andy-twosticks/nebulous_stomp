@@ -46,11 +46,20 @@ module NebulousStomp
     end
 
 
-    def set(key, value, hash=nil); insert_fake(key, value); end
+    def set(key, value, hash=nil) 
+      insert_fake(key, value)
+      "OK"
+    end
 
-    def del(key); @fake_pair = {}; end
+    def del(key)
+      x = @fake_pair.empty? ? 0 : 1
+      @fake_pair = {}
+      x
+    end
 
-    def get(key); @fake_pair.values.first; end
+    def get(key)
+      @fake_pair.values.first
+    end
 
 
   end 
