@@ -66,7 +66,7 @@ module NebulousStomp
         { "content-type"    => @content_type, 
           "neb-reply-id"    => @reply_id,
           "neb-reply-to"    => @reply_to,
-          "neb-in-reply-to" => @in_reply_to }.delete_if{|_,v| v.nil? }
+          "neb-in-reply-to" => @in_reply_to }
         
       end
 

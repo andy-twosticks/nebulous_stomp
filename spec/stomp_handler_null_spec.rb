@@ -19,19 +19,6 @@ describe StompHandlerNull do
   end
 
 
-=begin
-  describe 'StompHandlerNull.body_to_hash' do
-
-    it "returns a hash" do
-      expect{ StompHandlerNull.body_to_hash({}, 'baz') }.not_to raise_exception
-      expect( StompHandlerNull.body_to_hash({}, 'baz') ).to be_a_kind_of Hash
-    end
-
-  end
-  ##
-=end
-
-
   describe "#initialize" do
 
     it "takes an initialization hash" do

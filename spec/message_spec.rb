@@ -438,7 +438,7 @@ describe Message do
       expect( hdrs ).to include("content-type" => 'application/text')
 
       # The point of this test is?
-      #expect( hdrs ).to include("neb-reply-id" => nil)
+      expect( hdrs ).to include("neb-reply-id" => nil)
     end
 
   end

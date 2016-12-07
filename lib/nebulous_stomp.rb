@@ -8,7 +8,7 @@ require 'nebulous_stomp/param'
 require 'nebulous_stomp/message'
 require 'nebulous_stomp/target'
 require 'nebulous_stomp/listener'
-require 'nebulous_stomp/nebrequest'
+require 'nebulous_stomp/request'
 require 'nebulous_stomp/stomp_handler'
 require 'nebulous_stomp/redis_handler'
 
