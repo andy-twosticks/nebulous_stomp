@@ -130,16 +130,16 @@ Remembering that we offer users an "easy" way to read and write to Redis, as a s
 
     # set
     handler.connect unless handler.connected?
-    handler.set( key.is_a? String ? key : key.to_json, value.to_json )
+    handler.set( key.to_s, value )
 
     # set with timeout
     handler.connect unless handler.connected?
-    handler.set( key.is_a? String ? key : key.to_json, value.to_json, ex: timeout )
+    handler.set( key.to_s, value, ex: timeout )
 
     # get
     handler.connect unless handler.connected?
     begin
-      json  = handler.get(key.is_a? String ? key : key.to_json)
+      json  = handler.get(key.to_s)
       value = JSON.parse(key, :symbolize_names => true)
     rescue JSON::ParserError
       value = nil
@@ -150,19 +150,25 @@ Remembering that we offer users an "easy" way to read and write to Redis, as a s
 
 ### v3 ###
 
+    redis = NebulousStomp::RedisHelper.new
+
     # set
-    NebulousStomp.redis_set(key, value)
+    redis.set(key, value)
 
     # set with timeout
-    NebulousStomp.redis_set(key, value, timeout)
+    redis.set(key, value, timeout)
 
     # get
-    value = NebulousStomp.redis_get(key)
+    redis.get(key)
 
+    # delete
+    redis.del(key)
 
-* New redis_set method takes key, value, optional timeout.
+* New RedisHelper class.
 
-* New redis_get method takes key and returns value.
+    * set method takes key, value, optional timeout.
+    * get method takes key and returns value.
+    * del method takes key.
 
 
 Summary of Changes
@@ -175,7 +181,7 @@ Summary of Changes
 
 * New Request class containing the Q&A logic from NebRequest: accepts a Message on creation;
   returns another Message for the response. Should allow injection via attr_writer for testing.
-  Maybe we don't need a RequestNull? *bamf*
+  Maybe we don't need a RequestNull? 
 
 * New Listener class wraps StompHandler for the request-response use-case: accepts a queue (or a
   target) when created; consume_messages method yields each message from the queue, consuming it;

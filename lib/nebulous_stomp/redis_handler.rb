@@ -23,9 +23,7 @@ module NebulousStomp
     # testing. It's probably of no use to anyone else.
     #
     def initialize(connectHash=nil, testRedis=nil)
-      @redis_hash   = connectHash ? connectHash.dup : nil
-      @redis_hash ||= Param.get(:redisConnectHash)
-
+      @redis_hash = connectHash ? connectHash.dup : nil
       @test_redis = testRedis 
       @redis      = nil
     end
