@@ -90,6 +90,8 @@ module NebulousStomp
     # it. I could use Forwardable here -- except that would not allow us to
     # raise Nebulous::ConnectionError if @redis.nil?
     #
+    # Possible candidates for future inclusion: exists, expire, ping
+    #
     def method_missing(meth, *args)
       super unless [:set,:get,:del].include?(meth)
 

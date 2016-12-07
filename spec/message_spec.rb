@@ -1,6 +1,3 @@
-require 'stomp'
-
-require 'spec_helper'
 require 'nebulous_stomp/message'
 
 require_relative 'helpers'

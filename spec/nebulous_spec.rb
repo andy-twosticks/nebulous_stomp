@@ -1,7 +1,3 @@
-require 'spec_helper'
-
-require 'logger'
-
 require 'nebulous_stomp/param'
 
 
@@ -156,6 +152,7 @@ describe NebulousStomp do
 
   end
   ##
+
 
 end
 

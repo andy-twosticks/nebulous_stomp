@@ -1,5 +1,4 @@
 require 'time'
-require 'spec_helper'
 
 require 'nebulous_stomp/stomp_handler'
 require 'nebulous_stomp/message'
@@ -57,6 +56,7 @@ describe StompHandler do
   end
 
 
+=begin
   describe 'StompHandler.body_to_hash' do
 
     it "raises an error unless headers is a hash" do
@@ -127,6 +127,7 @@ describe StompHandler do
 
   end
   ##
+=end
 
 
   describe "StompHandler.with_timeout" do

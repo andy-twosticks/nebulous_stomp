@@ -1,4 +1,3 @@
-require 'spec_helper'
 require 'nebulous_stomp/param'
 
 include NebulousStomp

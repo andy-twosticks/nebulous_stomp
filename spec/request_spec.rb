@@ -1,6 +1,3 @@
-require 'spec_helper'
-
-
 require 'nebulous_stomp/request'
 require 'nebulous_stomp/stomp_handler_null'
 require 'nebulous_stomp/redis_handler_null'

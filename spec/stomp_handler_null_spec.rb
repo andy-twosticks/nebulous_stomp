@@ -1,7 +1,4 @@
-require 'spec_helper'
-
 require 'time'
-
 require 'nebulous_stomp/stomp_handler_null'
 
 include NebulousStomp
@@ -22,6 +19,7 @@ describe StompHandlerNull do
   end
 
 
+=begin
   describe 'StompHandlerNull.body_to_hash' do
 
     it "returns a hash" do
@@ -31,6 +29,7 @@ describe StompHandlerNull do
 
   end
   ##
+=end
 
 
   describe "#initialize" do
