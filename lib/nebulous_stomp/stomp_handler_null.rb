@@ -15,15 +15,15 @@ module NebulousStomp
   #
   class StompHandlerNull < StompHandler
 
-    attr_reader :fake_mess
+    attr_reader :fake_messages
 
     def initialize(hash={})
       super(hash)
-      @fake_mess = nil
+      @fake_messages = []
     end
 
     def insert_fake(message)
-      @fake_mess = message
+      @fake_messages << message
     end
 
     def stomp_connect
@@ -39,19 +39,19 @@ module NebulousStomp
     end
     
     def connected? 
-      @fake_mess != nil
+      @fake_messages != []
     end
 
     def listen(queue)
       NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
-      yield @fake_mess
+      @fake_messages.each{|m| yield m }
     end
 
     def listen_with_timeout(queue, timeout)
       NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
 
-      if @fake_mess
-        yield @fake_mess
+      if @fake_messages != []
+        @fake_messages.each{|m| yield m }
       else
         sleep timeout
         raise NebulousStomp::NebulousTimeout

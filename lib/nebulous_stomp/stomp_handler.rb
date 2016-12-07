@@ -23,51 +23,6 @@ module NebulousStomp
     class << self
 
 
-=begin
-      ##
-      # Parse stomp headers & body and return body as something Ruby-ish.
-      # It might not be a hash, in fact -- it could be an array of hashes.
-      #
-      # We assume that you are getting this from a STOMP message; the routine
-      # might not work if it is passed something other than Stomp::Message
-      # headers.  
-      #
-      # If you have better intelligence as to the content type of the message,
-      # pass the content type as the optional third parameter.
-      #
-      def body_to_hash(headers, body, contentType=nil)
-        hdrs = headers || {}
-
-        raise ArgumentError, "headers is not a hash" unless hdrs.kind_of? Hash
-
-        type = contentType \
-               || hdrs["content-type"] || hdrs[:content_type] \
-               || hdrs["contentType"]  || hdrs[:contentType]
-
-        hash = nil
-
-        if type =~ /json$/i 
-          begin
-            hash = JSON.parse(body)
-          rescue JSON::ParserError, TypeError
-            hash = {}
-          end
-
-        else
-          # We assume that text looks like STOMP headers, or nothing
-          hash = {}
-          body.to_s.split("\n").each do |line|
-            k,v = line.split(':', 2).each{|x| x.strip! }
-            hash[k] = v
-          end
-
-        end
-
-        hash
-      end
-=end
-
-
       ##
       # :call-seq:
       #   StompHandler.with_timeout(secs) -> (nil)

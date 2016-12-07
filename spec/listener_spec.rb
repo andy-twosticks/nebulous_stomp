@@ -55,10 +55,12 @@ describe Listener do
     before do
       listener1.stomp_handler = handler
       handler.insert_fake "foo"
+      handler.insert_fake "bar"
+      handler.insert_fake "baz"
     end
      
     it "should yield each message on the queue" do
-      expect{|b| listener1.consume_messages &b }.to  yield_successive_args("foo")
+      expect{|b| listener1.consume_messages &b }.to yield_successive_args("foo", "bar", "baz")
     end
     
   end
