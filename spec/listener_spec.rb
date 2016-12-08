@@ -88,5 +88,17 @@ describe Listener do
   end
 
 
+  describe "#quit" do
+     
+    it "calls StompHandler.stomp_disconnect" do
+      listener1.stomp_handler = handler
+      expect( handler ).to receive(:stomp_disconnect)
+      listener1.quit
+    end
+      
+    
+  end
+  
+
 end
 

@@ -1,3 +1,5 @@
+require 'json'
+
 require_relative 'param'
 require_relative 'redis_handler'
 
@@ -29,11 +31,7 @@ module NebulousStomp
 
     def get(key)
       ensure_connected
-      json = redis_handler.get(key.to_s)
-      json ? JSON.parse(json, symbolize_names: true) : nil
-
-    rescue JSON::ParserError
-      fail NebulousError, "Cannot parse stored JSON value '#{json}'"
+      redis_handler.get(key.to_s)
     end
 
     def del(key)
@@ -54,6 +52,14 @@ module NebulousStomp
 
     def ensure_connected
       redis_handler.connect unless redis_handler.connected?
+    end
+
+    def parse(json)
+      return nil if json.nil?
+      JSON.parse(json, symbolize_names: true)
+    rescue JSON::ParserError
+      x = json.match /^"(.*)"/
+      x ? x[1] : json
     end
 
   end

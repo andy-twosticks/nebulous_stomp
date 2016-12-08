@@ -35,6 +35,9 @@ module NebulousStomp
     #
     #     loop do; pause 5; end
     #
+    # Note also that this method runs inside a Thread, and so does the block you pass to it. By
+    # default threads do not report errors, so you must arrange to do that yourself.
+    #
     def consume_messages
       stomp_handler.listen(@queue) {|msg| yield msg }
     end
@@ -46,6 +49,10 @@ module NebulousStomp
     #
     def reply(queue, message)
       stomp_handler.send_message(queue, message)
+    end
+
+    def quit
+      stomp_handler.stomp_disconnect
     end
 
     private

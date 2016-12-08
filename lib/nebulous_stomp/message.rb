@@ -39,6 +39,11 @@ module NebulousStomp
       #
       # See also #respond, #respond_with_protocol, etc, etc.
       #
+      # Note that this method absolutely enforces the protocol with regard to the content type and
+      # (of course) the id of the message it is replying to; for example, even if you pass a
+      # different content type it will take the content type of the msg in preference. If you want
+      # something weirder, you will have to use Message.new.
+      #
       def in_reply_to(msg, args)
         raise ArgumentError, 'bad message'             unless msg.kind_of? Message
         raise ArgumentError, 'bad hash'                unless args.kind_of? Hash
@@ -150,10 +155,15 @@ module NebulousStomp
 
     ##
     # Repond with a message (presumably a custom one that's non-Protocol)
-    #
+    # 
     def respond(body)
-      raise NebulousError, "Don't know which queue to reply to" unless reply_to
-      [ reply_to, Message.in_reply_to(self, body: body) ]
+      fail NebulousError, "Don't know which queue to reply to" unless reply_to
+
+      # Easy to do by mistake, pain in the arse to work out what's going on if you do
+      fail ArgumentError, "Respond takes a body, not a message" if body.is_a? Message 
+
+      mess = Message.in_reply_to(self, body: body)
+      [ reply_to, mess ]
     end
 
     ##

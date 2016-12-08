@@ -111,7 +111,7 @@ describe Request do
       expect( r.message.verb     ).to eq message1.verb
       expect( r.message.params   ).to eq message1.params
       expect( r.message.desc     ).to eq message1.desc
-      expect( r.message.reply_to ).to eq target1.receive_queue
+      expect( r.message.reply_to ).to eq target1.send_queue
     end
 
   end

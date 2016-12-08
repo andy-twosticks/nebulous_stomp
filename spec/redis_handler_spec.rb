@@ -99,10 +99,10 @@ describe RedisHandler do
       expect(redis).to receive(:get)
       expect(redis).to receive(:del)
 
-      expect{ handler.connect             }.not_to raise_error
-      expect{ handler.set("foo", {bar:1}) }.not_to raise_error
-      expect{ handler.get("foo")          }.not_to raise_error
-      expect{ handler.del("foo")          }.not_to raise_error
+      handler.connect
+      handler.set("foo", {bar:1})
+      handler.get("foo")
+      handler.del("foo")
 
       # I "happen to know" that we are using method_missing to implement the
       # above. It's an implementation detail, but let's throw a test in for

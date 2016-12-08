@@ -134,7 +134,7 @@ module NebulousStomp
       fail ArgumentError, "Message does not have a verb" unless message.verb
 
       new_message = ->(h){ Message.new(message.to_h.merge h) }
-      message.reply_to ? message : new_message.(replyTo: target.receive_queue)
+      message.reply_to ? message : new_message.(replyTo: target.send_queue)
     end
 
     ##

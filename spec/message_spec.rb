@@ -17,6 +17,7 @@ describe Message do
   # headers; we're stuck with that. So for comparison purposes this helper
   # function deep-converts all keys in a hash to symbols.
   def symbolise(hash)
+    return nil unless hash.is_a? Hash
 
     hash.each_with_object({}) do |(k,v),m| 
       m[k.to_sym] = v.kind_of?(Hash) ? symbolise(v) : v
@@ -25,12 +26,16 @@ describe Message do
   end
 
 
+  let(:new_hash_body) do
+    { verb: 'Velma', parameters: 'Shaggy', description:'Scooby' }
+  end
+
   let(:new_hash) do
-    { replyTo:   'Daphne', 
-      inReplyTo: 'Fred', 
-      verb:      'Velma', 
-      params:    'Shaggy', 
-      desc:      'Scooby' }
+    { replyTo:     'Daphne', 
+      inReplyTo:   'Fred', 
+      verb:        'Velma', 
+      parameters:  'Shaggy', 
+      description: 'Scooby' }
 
   end
 
@@ -62,18 +67,57 @@ describe Message do
   let(:msg_cache) { Message.from_cache( json_hash.to_json ) }
 
 
-  describe 'Message.new (called directly)' do
+  describe 'Message.new' do
 
     it 'returns a Message object' do
       expect( msg_new ).to be_a_kind_of(Message)
     end
 
-    it 'sets protocol attributes if it can' do
+    it 'sets protocol attributes when they are given' do
       expect( msg_new.reply_to    ).to eq new_hash[:replyTo]
       expect( msg_new.in_reply_to ).to eq new_hash[:inReplyTo]
       expect( msg_new.verb        ).to eq new_hash[:verb]
-      expect( msg_new.params      ).to eq new_hash[:params]
-      expect( msg_new.desc        ).to eq new_hash[:desc]
+      expect( msg_new.params      ).to eq new_hash[:parameters]
+      expect( msg_new.desc        ).to eq new_hash[:description]
+      expect( symbolise msg_new.body ).to eq new_hash_body
+    end
+
+    it "prefers to build a body from protocol attributes" do
+      m = Message.new new_hash.merge(body: "foo")
+      expect( m.verb   ).to eq new_hash[:verb]
+      expect( m.params ).to eq new_hash[:parameters]
+      expect( m.desc   ).to eq new_hash[:description]
+      expect( symbolise m.body ).to eq new_hash_body
+    end
+
+    it "takes the body attribute as given if there is no verb" do
+      m = Message.new(body: "foo", params: "bar", desc: "baz")
+      expect( m.verb   ).to be_nil
+      expect( m.params ).to be_nil
+      expect( m.desc   ).to be_nil
+      expect( m.body   ).to eq "foo"
+    end
+
+    it "builds the body and protocol from stompBody if they are missing" do
+      m = Message.new(stompBody: new_hash_body.to_json, contentType: 'application/json')
+      expect( m.verb   ).to eq new_hash[:verb]
+      expect( m.params ).to eq new_hash[:parameters]
+      expect( m.desc   ).to eq new_hash[:description]
+      expect( symbolise m.body ).to eq new_hash_body
+    end
+
+    it "sets body from stompbody if body/verb are missing, and stompbody is not protocol" do
+      m = Message.new(stompBody: "waga waga")
+      expect( m.verb   ).to be_nil
+      expect( m.params ).to be_nil
+      expect( m.desc   ).to be_nil
+      expect( m.body   ).to eq "waga waga"
+
+      m = Message.new(stompBody: "wigi wigi", contentType: "text")
+      expect( m.verb   ).to be_nil
+      expect( m.params ).to be_nil
+      expect( m.desc   ).to be_nil
+      expect( m.body   ).to eq "wigi wigi"
     end
 
     it 'takes the content type from the input arguments' do
@@ -407,12 +451,9 @@ describe Message do
       expect( nr.body ).to be_nil
     end
 
-    it "returns the body if given and no stomp_body given" do
+    it "returns the body if given and no stomp_body or verb given" do
       nr = Message.new(body: "foo")
       expect( nr.body ).to eq "foo"
-
-      nr = Message.new(stompBody: new_hash.to_json, body: "foo", contentType: "JSON")
-      expect( symbolise nr.body ).to eq new_hash
     end
 
   end

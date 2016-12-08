@@ -32,8 +32,8 @@ module NebulousStomp
         @stomp_body = hash[:stompBody]
         @body       = hash[:body]
         @verb       = hash[:verb]
-        @params     = hash[:params]
-        @desc       = hash[:desc]
+        @params     = hash[:parameters] || hash[:params] 
+        @desc       = hash[:description] || hash[:desc]
 
         fill_from_stomp
       end
@@ -57,13 +57,16 @@ module NebulousStomp
       # Return a body object for the Stomp gem
       #
       def body_for_stomp
-        hash = protocol_hash
 
-        if @is_json
-          hash.to_json
-        else
-          hash.map {|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
+        case 
+          when @is_json
+            @body.to_json
+          when @body.is_a?(Hash)
+            @body.map{|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
+          else
+            @body.to_s
         end
+
       end
 
       ##
@@ -91,50 +94,75 @@ module NebulousStomp
       end
 
       ##
-      # Fill all the other attributes, if you can, from @stomp_body.
+      # Fill all the other attributes, if we can.
+      #
+      # Note that we confusingly store @verb, @params, & @desc (The Protocol, which if present is
+      # the message body); @body (the message body); and @stomp_body (the original body from the
+      # stomp message if we were created from one). Any of these could be passed in the initialize
+      # hash.
+      #
+      # The rule is that we always prioritize them in that order. If we are passed a @verb, then
+      # the Protocol fields go into @body; otherwise if set we take @body as it stands; otherwise
+      # we try and decode @stomp_body and set that in @body.
+      #
+      # NB: We never overwrite @stomp_body. If not passed to us, it stays nil. It's only stored in
+      # case we can't decode it, as a fallback.
       #
       def fill_from_stomp
-        @body = parse_stomp_body
 
-        if @body && !@body.empty?
-          @verb   ||= @body["verb"]
-          @params ||= @body["parameters"]  || @body["params"]
-          @desc   ||= @body["description"] || @body["desc"]
-
-          # Assume that if verb is missing, the other two are just part of a
-          # response which has nothing to do with the protocol
-          @params = @desc = nil unless @verb
+        if @verb
+          @body = protocol_hash
+        elsif @body.nil? || @body.respond_to?(:empty?) && @body.empty?
+          @body = parse_stomp_body 
         end
+
+        parse_body
+
+        # Assume that if verb is missing, the other two are just part of a
+        # response which has nothing to do with the protocol
+        @params = @desc = nil unless @verb
 
         self
       end
 
       def parse_stomp_body
-        h = (@is_json ? stomp_body_from_json : stomp_body_from_text)
-
-        if h.nil? || h == {}
-          @stomp_body || @body 
-        else
-          h
+        case
+          when @stomp_body.nil? then nil
+          when @is_json         then stomp_body_from_json
+          else 
+            stomp_body_from_text
+            
         end
       end
 
       def stomp_body_from_json
         JSON.parse(@stomp_body)
       rescue JSON::ParserError, TypeError
-        {}
+        # If we can't parse it, fine, take it as a text blob
+        @stomp_body.to_s
       end
 
-      # We assume that text looks like STOMP headers, or nothing
       def stomp_body_from_text
+        lines = @stomp_body.to_s.split("\n").reject{|s| s =~ /^\s*$/ }
+        hash  = {}
 
-        hash = {}
-        @stomp_body.to_s.split("\n").each do |line|
+        lines.each do |line|
           k,v = line.split(':', 2).each{|x| x.strip! }
-          hash[k] = v
+          hash[k] = v if line.include?(':')
         end
-        hash
+
+        # If there are any lines we could not parse, forget the whole thing and return a text blob
+        (lines.size > hash.keys.size) ? @stomp_body.to_s : hash
       end
+
+      def parse_body
+        if @body.is_a?(Hash)
+          @verb   ||= @body["verb"]
+          @params ||= @body["parameters"]  || @body["params"]
+          @desc   ||= @body["description"] || @body["desc"]
+        end
+      end
+
 
     end # Message::Body
 

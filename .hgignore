@@ -17,3 +17,5 @@ syntax: glob
 mkmf.log
 .ruby-*
 .Project
+
+feature/connection.yaml

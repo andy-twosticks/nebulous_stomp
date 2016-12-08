@@ -18,9 +18,10 @@ describe RedisHelper do
     helper
   end
 
-  def insert_fake
-    @redis_handler.insert_fake( "bark", {woof: true}.to_json )
+  def insert_fake( value={woof: true} )
+    @redis_handler.insert_fake( "bark", value.to_json )
   end
+
 
 
   describe "set" do
@@ -56,13 +57,19 @@ describe RedisHelper do
     it "calls RedisHandler.get to retreive the value" do
       insert_fake
       expect( @redis_handler ).to receive(:get).with("bark")
-      helper.get("bark")
+      helper.get "bark"
     end
 
     it "returns the corresponding value" do
       insert_fake
       expect( helper.get("bark") ).to eq( {woof: true} )
       expect( helper.get(:bark)  ).to eq( {woof: true} )
+
+      insert_fake("baaah")
+      expect( helper.get("bark") ).to eq "baaah"
+
+      insert_fake(woof: "loud")
+      expect( helper.get("bark") ).to eq( {woof: "loud"} )
     end
 
     it "returns nil if the key does not exist in the store" do

@@ -1,0 +1,24 @@
+---
+
+:init:
+  :stompConnectHash:
+    hosts:
+      - login:    guest
+        passcode: guest
+        host:     '10.11.12.13'
+        port:     61613
+        ssl:      false
+    reliable: false
+
+  :redisConnectHash:
+    host: '127.0.0.1'
+    port: 6379
+    db  : 0   
+
+  :messageTimeout: 2
+  :cacheTimeout  : 10
+
+:target:
+  :sendQueue:    '/queue/featuretestsend'
+  :receiveQueue: '/queue/featuretestreceive'
+

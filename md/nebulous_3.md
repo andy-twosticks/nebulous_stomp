@@ -197,15 +197,15 @@ Summary of Changes
 * Message.in_reply_to now takes a Message and a hash. Message.from_parts is no longer a thing. New
   methods #respond and respond_protocol. to_cache is now to_h.
 
-* NebRequest to be removed. *bamf*
+* NebRequest to be removed.
 
 * new RedisHelper ckass to have new get, set methods as above.
 
 * To facilitate testing of Listener, StompHandlerNull needs to support multiple fake messages;
-  StompHandlerNull.listen should return each and then stop. *bamf*
+  StompHandlerNull.listen should return each and then stop.
 
 * All of the above needs test coverage, of course. through_test needs changing to reflect the new
-  API.
+  API. *bamf*
 
 * And... we need a README with a tutorial of the order of Pod4. 
 
