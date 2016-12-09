@@ -100,17 +100,6 @@ describe RedisHelper do
   end
   ##
   
-
-  describe "quit" do
-
-    it "calls RedisHandler.quit" do
-      expect( @redis_handler ).to receive(:quit)
-      helper.quit
-    end
-
-  end
-  ##
-
 end
 
 

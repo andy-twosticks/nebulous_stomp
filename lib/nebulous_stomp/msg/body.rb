@@ -77,7 +77,7 @@ module NebulousStomp
       # (We use this as the key for the Redis cache)
       #
       def protocol_json
-        raise NebulousError, "no protocol in this message!" unless @verb
+        fail NebulousError, "no protocol in this message!" unless @verb
         protocol_hash.to_json
       end
 

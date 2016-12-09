@@ -22,7 +22,6 @@ module NebulousStomp
     #
     class << self
 
-
       ##
       # :call-seq:
       #   StompHandler.with_timeout(secs) -> (nil)
@@ -35,17 +34,16 @@ module NebulousStomp
       #    r.signal
       #  end
       #
-      # Use `r.signal` to signal when the process has finished. You need to
-      # arrange your own method of working out whether the timeout fired or not.
+      # Use `r.signal` to signal when the process has finished. You need to arrange your own method
+      # of working out whether the timeout fired or not.
       #
-      # Also, please note that when the timeout period expires, your code will
-      # keep running. The timeout will only be honoured when your block
-      # completes. This is very useful for Stomp.subscribe, but probably not
-      # for anything else...
+      # Also, please note that when the timeout period expires, your code will keep running. The
+      # timeout will only be honoured when your block completes. This is very useful for
+      # Stomp.subscribe, but probably not for anything else...
       #
-      # There is a Ruby standard library for this, Timeout. But there appears to
-      # be some argument as to whether it is threadsafe; so, we roll our own. It
-      # probably doesn't matter since both Redis and Stomp do use Timeout. But.
+      # There is a Ruby standard library for this, Timeout. But there appears to be some argument
+      # as to whether it is threadsafe; so, we roll our own. It probably doesn't matter since both
+      # Redis and Stomp do use Timeout. But.
       #
       def with_timeout(secs)
         mutex    = Mutex.new
@@ -54,7 +52,6 @@ module NebulousStomp
         t = Thread.new do
           mutex.synchronize { yield resource }
         end
-
         mutex.synchronize { resource.wait(mutex, secs) }
 
         nil
@@ -67,17 +64,11 @@ module NebulousStomp
     ##
     # Initialise StompHandler by passing the parameter hash.
     #
-    # If no hash is set we try and get it from NebulousStomp::Param.
-    # ONLY set testClient when testing.
-    #
     def initialize(connectHash=nil, testClient=nil)
-      @stomp_hash   = connectHash ? connectHash.dup : nil
-      #@stomp_hash ||= Param.get(:stompConnectHash)
-
+      @stomp_hash  = connectHash ? connectHash.dup : nil
       @test_client = testClient
       @client      = nil
     end
-
 
     ##
     # Connect to the STOMP client.
@@ -87,19 +78,17 @@ module NebulousStomp
       NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP"} 
 
       @client = @test_client || Stomp::Client.new( @stomp_hash )
-      raise ConnectionError, "Stomp Connection failed" unless connected?
+      fail ConnectionError, "Stomp Connection failed" unless connected?
 
       conn = @client.connection_frame()
       if conn.command == Stomp::CMD_ERROR
-        raise ConnectionError, "Connect Error: #{conn.body}"
+        fail ConnectionError, "Connect Error: #{conn.body}"
       end
 
       self
-
     rescue => err
       raise ConnectionError, err
     end
-
 
     ##
     # Drop the connection to the STOMP Client
@@ -114,7 +103,6 @@ module NebulousStomp
       self
     end
 
-
     ##
     # return true if we are connected to the STOMP server
     #
@@ -122,14 +110,12 @@ module NebulousStomp
       @client && @client.open?
     end
 
-
     ##
     # return true if Nebulous is turned on in the parameters
     #
     def nebulous_on?
       @stomp_hash && !@stomp_hash.empty?
     end
-
 
     ##
     # Block for incoming messages on a queue.  Yield each message.
@@ -140,7 +126,7 @@ module NebulousStomp
     # main thread sleeping so that it does not termimate while the thread is
     # running.  So to use this make sure that you at some point do something
     # like:
-    #     loop; sleep 5; end
+    #     loop { sleep 5 }
     #
     def listen(queue)
       return unless nebulous_on?
@@ -163,7 +149,6 @@ module NebulousStomp
 
     end
 
-
     ##
     # As listen() but give up after yielding a single message, and only wait
     # for a set number of seconds before giving up anyway.
@@ -177,15 +162,10 @@ module NebulousStomp
     #
     def listen_with_timeout(queue, timeout)
       return unless nebulous_on?
-
-      NebulousStomp.logger.info(__FILE__) do
-        "Subscribing to #{queue} with timeout #{timeout}"
-      end
+      NebulousStomp.logger.info(__FILE__) { "Subscribing to #{queue} with timeout #{timeout}" }
 
       stomp_connect unless @client
-
       @client.publish( queue, "boo" )
-
       done = false
 
       StompHandler.with_timeout(timeout) do |resource|
@@ -214,16 +194,15 @@ module NebulousStomp
         resource.signal if done #or here. either, but.
       end # of with_timeout
 
-      raise NebulousTimeout unless done
+      fail NebulousTimeout unless done
     end
-
 
     ##
     # Send a Message to a queue; return the message.
     #
     def send_message(queue, mess)
       return nil unless nebulous_on?
-      raise NebulousStomp::NebulousError, "That's not a Message" \
+      fail NebulousStomp::NebulousError, "That's not a Message" \
         unless mess.respond_to?(:body_for_stomp) \
             && mess.respond_to?(:headers_for_stomp)
 
@@ -231,17 +210,15 @@ module NebulousStomp
 
       headers = mess.headers_for_stomp.reject{|k,v| v.nil? || v == "" }
       @client.publish(queue, mess.body_for_stomp, headers)
-
       mess
     end
-
 
     ##
     # Return the neb-reply-id we're going to use for this connection
     #
     def calc_reply_id
       return nil unless nebulous_on?
-      raise ConnectionError, "Client not connected" unless @client
+      fail ConnectionError, "Client not connected" unless @client
 
       @client.connection_frame().headers["session"] \
         << "_" \
@@ -249,9 +226,7 @@ module NebulousStomp
 
     end
 
-
-  end
-  ##
+  end # StompHandler
 
 
 end

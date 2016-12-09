@@ -24,16 +24,15 @@ module NebulousStomp
                        messageTimeout: nil }
 
     ##
-    # Set the initial parameter string. This also has the effect of resetting
-    # everything. 
+    # Set the initial parameter string. This also has the effect of resetting everything. 
     #
-    # Parameters default to Param::ParamDefaults. keys passed in parameter p to
-    # ovveride those defaults must match, or a NebulousError will result.
+    # Parameters default to Param::ParamDefaults. keys passed in parameter p to override those
+    # defaults must match, or a NebulousError will result.
     #
     # This method is only called by Nebulous::init().
     #
     def set(p={})
-      raise NebulousError, "Invalid initialisation hash" unless p.kind_of?(Hash)
+      fail NebulousError, "Invalid initialisation hash" unless p.kind_of?(Hash)
 
       validate(ParamDefaults, p, "Unknown initialisation hash")
 
@@ -50,7 +49,7 @@ module NebulousStomp
     # Used only by Nebulous::init
     #
     def add_target(t)
-      raise NebulousError, "Invalid target" unless t.kind_of?(Target)
+      fail NebulousError, "Invalid target" unless t.kind_of?(Target)
 
       @params ||= ParamDefaults
       @params[:targets][t.name.to_sym] = t
@@ -60,7 +59,7 @@ module NebulousStomp
     # Set a logger instance
     #
     def set_logger(lg)
-      raise NebulousError unless lg.kind_of?(Logger) || lg.nil?
+      fail NebulousError unless lg.kind_of?(Logger) || lg.nil?
       @logger = lg
     end
 
@@ -99,7 +98,7 @@ module NebulousStomp
     #
     def validate(exemplar, hash, message)
       hash.each_key do |k|
-        raise NebulousError, "#{message} key '#{k}'" unless exemplar.include?(k)
+        fail NebulousError, "#{message} key '#{k}'" unless exemplar.include?(k)
       end
     end
 

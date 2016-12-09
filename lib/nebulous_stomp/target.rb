@@ -1,12 +1,28 @@
 module NebulousStomp
 
 
+  ##
+  # Represents a single Target. Read only.
+  #
+  # NebulousStomp.add_target returns a Target, or you can retreive one from the config using
+  # NebulousStomp.get_target.
+  # 
   class Target
 
     attr_reader :send_queue, :receive_queue, :message_timeout, :name
 
     VALID_KEYS = %i|sendQueue receiveQueue messageTimeout name|
 
+    ##
+    # Create a target.
+    #
+    # Valid keys for the hash:
+    #
+    #     * :sendQueue
+    #     * :receiveQeue
+    #     * :name
+    #     * :messageTimeout (optional)
+    #
     def initialize(hash)
       fail ArgumentError, "Argument for Target.new must be a hash" unless hash.is_a? Hash
 

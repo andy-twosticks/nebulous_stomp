@@ -6,7 +6,6 @@ require_relative 'redis_handler'
 
 module NebulousStomp
 
-
   ##
   # Behaves just like RedisHandler, except, does nothing and expects no
   # connection to Redis.
@@ -17,34 +16,28 @@ module NebulousStomp
 
     attr_reader :fake_pair
 
-
     def initialize(connectHash={})
       super
       @fake_pair = {}
     end
 
-
     def insert_fake(key, value)
       @fake_pair = { key => value }
     end
-
 
     def connect
       @redis = true
       self
     end
 
-
     def quit
       @redis = nil
       self
     end
-
     
     def connected?
       @fake_pair != {}
     end
-
 
     def set(key, value, hash=nil) 
       insert_fake(key, value)
@@ -60,7 +53,6 @@ module NebulousStomp
     def get(key)
       @fake_pair.values.first
     end
-
 
   end 
 

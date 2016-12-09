@@ -8,7 +8,11 @@ module NebulousStomp
 
 
   ##
-  # Class to handle a request which returns a Message
+  # Class to handle a request which returns a Message; the Question-Answer use case.
+  #
+  #     message   = NebulousStomp::Message.new(verb: "ping")
+  #     request   = NebulousStomp::Request.new(:target1, message)
+  #     response1 = request.send
   #
   # This replaces the old NebRequest class; it's much more clearly a wrapper for a Message, now.
   #
@@ -16,9 +20,7 @@ module NebulousStomp
 
     attr_reader :target, :message
 
-    ##
     # If you are testing you can write these with, for example, a StompHandlerNull object
-    #
     attr_writer :stomp_handler, :redis_handler
 
     ##
@@ -47,8 +49,8 @@ module NebulousStomp
     #
     # Raises ArgumentError, NebulousTimeout or NebulousError as necessary.
     #
-    # Note that this routine completely ignores Redis. It doesn't just not
-    # check the cache; it also doesn't update it.
+    # Note that this routine completely ignores Redis. It doesn't just not check the cache; it also
+    # doesn't update it.
     #
     def send_no_cache(mtimeout=message_timeout)
       return nil unless NebulousStomp.on?

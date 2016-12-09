@@ -10,8 +10,7 @@ module NebulousStomp
 
 
   ##
-  # Behaves just like StompHandler, except, does nothing and expects no stomp
-  # connection
+  # Behaves just like StompHandler, except, does nothing and expects no stomp connection
   #
   class StompHandlerNull < StompHandler
 
