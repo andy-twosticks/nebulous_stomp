@@ -15,6 +15,10 @@ module NebulousStomp
   # This class is entirely read-only, except for reply_id, which is set by Request when the
   # message is sent.
   #
+  # Much of this class is handled by two helper classes: the message headers are handled by
+  # Msg::Header and the message body by Msg::Body. You should look at them, too, for the full
+  # picture.
+  #
   class Message
     extend Forwardable
 

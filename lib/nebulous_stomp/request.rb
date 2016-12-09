@@ -61,7 +61,7 @@ module NebulousStomp
     end
 
     ##
-    # ::call-seq::
+    # :call-seq:
     #     request.send                    -> (Message)
     #     request.send(mTImeout)          -> (Message)
     #     request.send(mtimeout,ctimeout) -> (Message)
@@ -69,8 +69,8 @@ module NebulousStomp
     # As send_nocache, but without not using the cache :)
     #
     # Parameters:
-    #  mtimeout  [Fixnum] Message timout in seconds - defaults to @mTimeout
-    #  ctimeout  [Fixnum] Cache timout in seconds - defaults to @cTimeout
+    #  mtimeout Message timout in seconds - defaults to @mTimeout
+    #  ctimeout Cache timout in seconds - defaults to @cTimeout
     #
     # Raises ArgumentError, NebulousTimeout, NebulousError as necessary.
     #
