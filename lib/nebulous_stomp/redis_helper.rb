@@ -1,7 +1,6 @@
 require 'json'
 
-require_relative 'param'
-require_relative 'redis_handler'
+require_relative '../nebulous_stomp'
 
 
 module NebulousStomp
@@ -24,22 +23,31 @@ module NebulousStomp
     # For testing only
     attr_writer :redis_handler
 
+    def initialize
+      @param_hash = Param.get(:redisConnectHash)
+
+      fail NebulousError, "NebulousStomp.init has not been called or Redis not configured" \
+        if @param_hash.nil? || @param_hash.empty?
+
+    end
+
     ##
     # :call-seq: 
     # redis.set(key, value)
     # redis.set(key, value, timeout)
     #
-    # Set a string value in the store.
+    # Set a value in the store.
     #
     def set(key, value, timeout=nil)
       rtimeout = (Integer(timeout.to_s, 10) rescue nil)
+      rvalue   = value_to_json(value)
       fail ArgumentError, "Timeout must be a number" if timeout && rtimeout.nil?
       ensure_connected
 
       if timeout
-        redis_handler.set(key.to_s, value, rtimeout)
+        redis_handler.set(key.to_s, rvalue, ex: rtimeout)
       else
-        redis_handler.set(key.to_s, value)
+        redis_handler.set(key.to_s, rvalue)
       end
 
       self
@@ -53,7 +61,7 @@ module NebulousStomp
     #
     def get(key)
       ensure_connected
-      redis_handler.get(key.to_s)
+      json_to_value(redis_handler.get key.to_s)
     end
 
     ##
@@ -78,12 +86,17 @@ module NebulousStomp
       redis_handler.connect unless redis_handler.connected?
     end
 
-    def parse(json)
+    def value_to_json(value)
+      { value: value}.to_json
+    end
+
+    def json_to_value(json)
       return nil if json.nil?
-      JSON.parse(json, symbolize_names: true)
+      hash = JSON.parse(json, symbolize_names: true)
+
+      hash.is_a?(Hash) ? hash[:value] : nil
     rescue JSON::ParserError
-      x = json.match /^"(.*)"/
-      x ? x[1] : json
+      return nil
     end
 
   end # RedisHelper

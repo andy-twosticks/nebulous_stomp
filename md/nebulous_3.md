@@ -205,7 +205,7 @@ Summary of Changes
   StompHandlerNull.listen should return each and then stop.
 
 * All of the above needs test coverage, of course. through_test needs changing to reflect the new
-  API. *bamf*
+  API. 
 
 * And... we need a README with a tutorial of the order of Pod4. 
 

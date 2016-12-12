@@ -9,6 +9,8 @@ include NebulousStomp
 describe RedisHelper do
 
   before do
+    @redis_hash = {host: '127.0.0.1', port: 6379, db: 0}
+    NebulousStomp.init(:redisConnectHash => @redis_hash)
     @redis_handler = RedisHandlerNull.new(@redis_hash)
   end
 
@@ -19,7 +21,7 @@ describe RedisHelper do
   end
 
   def insert_fake( value={woof: true} )
-    @redis_handler.insert_fake( "bark", value.to_json )
+    @redis_handler.insert_fake( "bark", {value: value}.to_json )
   end
 
 
@@ -36,10 +38,10 @@ describe RedisHelper do
     end
 
     it "calls RedisHandler.set to write the value" do
-      expect( @redis_handler ).to receive(:set).with("foo", "bar")
+      expect( @redis_handler ).to receive(:set).with("foo", {value:"bar"}.to_json)
       helper.set(:foo, "bar")
 
-      expect( @redis_handler ).to receive(:set).with("foo", "bar", 14)
+      expect( @redis_handler ).to receive(:set).with("foo", {value:"bar"}.to_json, {ex: 14})
       helper.set(:foo, "bar", 14)
     end
 

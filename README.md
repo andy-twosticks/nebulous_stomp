@@ -175,7 +175,9 @@ Note also, for the same reason, that your program must hold the main thread open
 
 ### Redis ###
 
-    require "nebulous_stomp"
+    require "nebulous_stomp/redis_helper"
+
+    # ...parameters get set here...
 
     redis = NebulousStomp::RedisHelper.new
 
