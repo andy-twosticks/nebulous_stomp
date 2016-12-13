@@ -31,7 +31,7 @@ module NebulousStomp
   #
   class Listener
 
-    # the queue name
+    # the queue name we are listening to
     attr_reader :queue         
 
     # Insert a StompHandler object for test purposes

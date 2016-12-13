@@ -3,8 +3,8 @@ require 'nebulous_stomp/param'
 
 describe NebulousStomp do
 
-  before      { NebulousStomp::Param.reset }
-  after(:all) { NebulousStomp::Param.reset }
+  before      { NebulousStomp::Param.send :reset }
+  after(:all) { NebulousStomp::Param.send :reset }
 
 
   # Magically replaces the real Param module

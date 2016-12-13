@@ -16,8 +16,6 @@ module NebulousStomp
       attr_reader :stomp_body
 
       # The Nebulous Protocol
-      # Note that if you happen to pass an array as @params, it's actually
-      # writable, which is not ideal.
       attr_reader :verb, :params, :desc
 
       # Will be a hash for messages that follow The Protocol; anything at all otherwise.

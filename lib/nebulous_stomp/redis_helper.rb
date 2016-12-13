@@ -23,6 +23,10 @@ module NebulousStomp
     # For testing only
     attr_writer :redis_handler
 
+    ##
+    # :call-seq:
+    # RedisHelper.new -> (helper)
+    #
     def initialize
       @param_hash = Param.get(:redisConnectHash)
 

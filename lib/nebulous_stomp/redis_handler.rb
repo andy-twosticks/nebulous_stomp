@@ -6,6 +6,9 @@ module NebulousStomp
 
   ##
   # A class to deal with talking to Redis via the Redis gem
+  #
+  # You shouldn't need to instantiate this yourself. If you want to use NebulousStomp to talk to
+  # redis directly, try NebulousStomp::RedisHelper.
   # 
   class RedisHandler
 

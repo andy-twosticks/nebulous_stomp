@@ -1,8 +1,5 @@
-Nebulous-Stomp
-==============
-
 Introduction
-------------
+============
 
 A little module that implements The Nebulous Protocol, a way of passing data over STOMP between
 different systems. Specifically, it allows you to send a message, a *Request* and receive another
@@ -21,8 +18,17 @@ if your program is likely to make the same request repeatedly within a short tim
 yourself.
 
 
+Thanks
+======
+
+This code was developed, by me, during working hours at [James Hall & Co.
+Ltd](https://www.jameshall.co.uk/). I'm incredibly greatful that they have permitted me to
+open-source it.
+
+
+
 A Quick Example
----------------
+===============
 
 Before we get too bogged down, some code. 
 
@@ -41,7 +47,7 @@ be raised.
 
 
 The Protocol
-------------
+============
 
 I natter on about this in far too much detail elsewhere, but the highly condensed version is:
 
@@ -64,7 +70,7 @@ I natter on about this in far too much detail elsewhere, but the highly condense
 
 
 Targets
--------
+=======
 
 When you have a system running a request-response loop, then the simplest way to proceed is to
 assign it a pair of queues on your Stomp server: one for incoming requests, and one for it to post
@@ -74,11 +80,17 @@ We call such a system a Target. Any other, question-answer, system (which wants 
 that target and get a response) will need to know what those queues are; so we configure a list of
 targets at startup.
 
+Note that it is perfectly okay for a target to use more than one request queue (desirable, even,
+if some requests will take time to fulfil). But we don't directly support that in Nebulous: a
+Target is always one request queue, one response queue. In this case, the simplest way forward is
+to define two targets.
+
 
 Examples
---------
+========
 
-### Request-Response ###
+Request-Response
+----------------
 
 This revisits the example from the start, but with more detail. For completeness, we configure a
 Redis server for caching respsonses (which is optional) and show all the config hashes (which
@@ -115,6 +127,10 @@ pointless and for example only.)
 The stomp hash is passed unchanged to the Stomp gem; the redis hash is passed unchanged to the
 Redis gem. See these gems for details about what they should contain.
 
+Message.new takes a single hash as an argument; it accepts a long list of possible keys, but mostly
+I imagine you will be using 'verb', 'params', and 'desc'. It's worth also noting 'replyTo', which
+sets the queue to reply to; if missing then Request sets it from the Target, of course.
+
 This rather specific example contains three seperate timeout values. The message timeout is the
 time we wait for a response before raising MessageTimeout. The value in the config hash is a
 default; in this example it is overidden on the target.  The cache timeout is, of course, the time
@@ -124,7 +140,8 @@ messages.
 Often even with a cache set up, you don't want to use it (for requests that trigger database
 updates, for example); in which case the method to call is `send_no_cache`.
 
-### Question-Answer ###
+Question-Answer
+---------------
 
     require "nebulous_stomp"
 
@@ -140,7 +157,7 @@ updates, for example); in which case the method to call is `send_no_cache`.
           when "ping" 
             listener.reply *msg.respond_with_success 
           when "time" 
-            listener.reply *msg.respond_with_protocol("timeresponce", Time.now)
+            listener.reply *msg.respond_with_protocol("timeresponse", Time.now)
           else
             listener.reply *msg.respond_with_error("Bad verb #{msg.verb}")
         end
@@ -173,7 +190,8 @@ exception as a parameter.
 Note also, for the same reason, that your program must hold the main thread open while
 `consume_messages` is running; if the main thread ends, the program stops.
 
-### Redis ###
+Redis
+-----
 
     require "nebulous_stomp/redis_helper"
 
@@ -193,23 +211,23 @@ it is fairly self-explanatory.
 
 
 A list of classes
------------------
+=================
 
 To help you drill down to the API documentation.  These are the externally-facing classes:
 
-* Listener -- implements the request-response use case
-* Message -- a Nebulous-Stomp message
+* Listener      -- implements the request-response use case
+* Message       -- a Nebulous message
 * NebulousStomp -- main class
-* RedisHelper -- implements the Redis use case 
-* Request -- implements the Request-Response use case; a wrapper for Message
-* Target -- represents a single Target
+* RedisHelper   -- implements the Redis use case 
+* Request       -- implements the Request-Response use case; a wrapper for Message
+* Target        -- represents a single Target
  
 These classes are used internally:
 
-* Param -- helper class to store and return configuration
-* RedisHandler -- internal class to wrap the Redis gem
+* Param            -- helper class to store and return configuration
+* RedisHandler     -- internal class to wrap the Redis gem
 * RedisHandlerNull -- a "mock" version of  RedisHandler for use in testing
-* StompHandler -- internal class to wrap the Stomp gem
+* StompHandler     -- internal class to wrap the Stomp gem
 * StompHandlerNull -- a "mock" version of StompHandler for use in testing
 
 You might find the null classes useful in your own tests; both Listener and Request allow the

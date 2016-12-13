@@ -8,9 +8,9 @@ module NebulousStomp
   ##
   # A Class to deal with talking to STOMP via the Stomp gem.
   #
-  # You will need to instantiate this yourself if you only want to listen for messages. But if you
-  # want to send a request and receive a response, you should never need this -- a NebRequest
-  # returns a Message.
+  # You shouldn't ever need to instantiate this yourself.  For listening to messages and
+  # responding, use NebulousStomp::Listener.  For sending a message and waiting for a response, you
+  # want NebulousStomp::Request (passing it a NebulousStomp::Message).
   #
   class StompHandler
 
@@ -120,11 +120,14 @@ module NebulousStomp
     ##
     # Block for incoming messages on a queue.  Yield each message.
     #
-    # Note that the blocking happens in a thread somewhere inside the STOMP
-    # client. I have no idea how to join that, and if the examples on the STOMP
-    # gem are to be believed, you flat out can't -- the examples just have the
-    # main thread sleeping so that it does not termimate while the thread is
-    # running.  So to use this make sure that you at some point do something
+    # This method automatically consumes every message it reads, since the assumption is that we
+    # are using it for the request-response use case.  If you don't want that, try
+    # listen_with_timeout(), instead.
+    #
+    # Note that the blocking happens in a thread somewhere inside the STOMP client. I have no idea
+    # how to join that, and if the examples on the STOMP gem are to be believed, you flat out can't
+    # -- the examples just have the main thread sleeping so that it does not termimate while the
+    # thread is running.  So to use this make sure that you at some point do something
     # like:
     #     loop { sleep 5 }
     #
@@ -150,8 +153,8 @@ module NebulousStomp
     end
 
     ##
-    # As listen() but give up after yielding a single message, and only wait
-    # for a set number of seconds before giving up anyway.
+    # As listen() but give up after yielding a single message, and only wait for a set number of
+    # seconds before giving up anyway.
     #
     # The behaviour here is slightly different than listen(). If you return true from your block,
     # the message will be consumed and the method will end.  Otherwise it will continue until it

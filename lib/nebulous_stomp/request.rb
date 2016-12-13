@@ -18,9 +18,13 @@ module NebulousStomp
   #
   class Request
 
-    attr_reader :target, :message
+    # The Target object we are sending the request to
+    attr_reader :target
 
-    # If you are testing you can write these with, for example, a StompHandlerNull object
+    # The message we are sending (might not be the Message object you passed...)
+    attr_reader :message
+
+    # If you are testing you can write these with a test object like StompHandlerNull for example
     attr_writer :stomp_handler, :redis_handler
 
     ##
@@ -45,7 +49,7 @@ module NebulousStomp
     # Send a request and return the response, without using the cache.
     #
     # Parameters:
-    #  mTimeout [Fixnum] Message timout in seconds - defaults to #message_timeout
+    #     * mTimeout -- Message timout in seconds; defaults to #message_timeout
     #
     # Raises ArgumentError, NebulousTimeout or NebulousError as necessary.
     #
@@ -69,8 +73,8 @@ module NebulousStomp
     # As send_nocache, but without not using the cache :)
     #
     # Parameters:
-    #  mtimeout Message timout in seconds - defaults to @mTimeout
-    #  ctimeout Cache timout in seconds - defaults to @cTimeout
+    #    * mtimeout -- Message timout in seconds; defaults to @mTimeout
+    #    * ctimeout -- Cache timout in seconds; defaults to @cTimeout
     #
     # Raises ArgumentError, NebulousTimeout, NebulousError as necessary.
     #

@@ -8,8 +8,18 @@ module NebulousStomp
   # NebulousStomp.get_target.
   # 
   class Target
+    #
+    # The identifying name of the queue
+    attr_reader :name
 
-    attr_reader :send_queue, :receive_queue, :message_timeout, :name
+    # The queue that the target sends responses to
+    attr_reader :send_queue
+    
+    # The queue that the target listens for requests on
+    attr_reader :receive_queue
+
+    # The message timeout for the queue
+    attr_reader :message_timeout
 
     VALID_KEYS = %i|sendQueue receiveQueue messageTimeout name|
 

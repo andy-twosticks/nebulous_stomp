@@ -43,8 +43,7 @@ module NebulousStomp
     # Add a Nebulous target.  Raises NebulousError if anything looks screwy.
     #
     # Parameters:
-    #  n -- target name
-    #  t -- a Target
+    #    * t -- a Target
     #
     # Used only by Nebulous::init
     #
@@ -84,12 +83,14 @@ module NebulousStomp
     end
 
     ##
-    # Given a target name, return the corresponding target hash 
+    # Given a target name, return the corresponding Target object
     #
     def get_target(name)
       t = Param.get(:targets)
       (t && t.kind_of?(Hash)) ? t[name.to_s.to_sym] : nil
     end
+
+    private
 
     ##
     # Raise an exception if a hash has any keys not found in an exemplar

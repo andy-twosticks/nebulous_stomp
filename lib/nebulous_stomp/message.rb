@@ -36,14 +36,15 @@ module NebulousStomp
 
       ##
       # :call-seq: 
-      # Message.in_reply_to(message, hash) -> Message
+      # Message.in_reply_to(message, args) -> Message
       #
       # Build a Message that replies to an existing Message
       #
-      # * msg - the Nebulous::Message that you are replying to
-      # * args - hash as per Message.new
+      #     * msg  - the Nebulous::Message that you are replying to
+      #     * args - hash as per Message.new
       #
-      # See also #respond, #respond_with_protocol, etc, etc.
+      # See also #respond, #respond_with_protocol, etc, etc. (which you are probably better off
+      # calling, to be honest).
       #
       # Note that this method absolutely enforces the protocol with regard to the content type and
       # (of course) the id of the message it is replying to; for example, even if you pass a
@@ -82,9 +83,9 @@ module NebulousStomp
       # :call-seq: 
       # Message.from_cache(hash) -> Message
       #
-      # To build a Nebmessage from a record in the Redis cache
+      # To build a Nebmessage from a record in the Redis cache.
       #
-      # See #to_cache for details of the hash that Redis should be storing
+      # See #to_h for details of the hash that Redis should be storing
       # 
       def from_cache(json)
         fail ArgumentError, "That can't be JSON, it's not a string" unless json.kind_of? String
@@ -121,7 +122,7 @@ module NebulousStomp
     #        case we should call Message.from_cache to create it (and, note, it will originally 
     #        have been created in one of the other two ways...)
     #
-    # The full list of useful hash keys is (as per Message.from_cache, #to_cache):
+    # The full list of useful hash keys is (as per Message.from_cache, #to_h):
     #
     #     * :body                 -- the message body
     #     * :contentType          -- Stomp content type string

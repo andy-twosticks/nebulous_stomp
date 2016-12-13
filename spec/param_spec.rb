@@ -5,8 +5,8 @@ include NebulousStomp
 
 describe Param do
 
-  before      { Param.reset }
-  after(:all) { Param.reset }
+  before      { Param.send :reset }
+  after(:all) { Param.send :reset }
 
   let(:target1) { Target.new(name: 'foo', receiveQueue: '/queue/foo', sendQueue: '/queue/bar') }
 
@@ -41,7 +41,7 @@ describe Param do
     end
 
     it 'works even when set has not been called' do
-      Param.reset
+      Param.send :reset
       expect{ Param.add_target(target1) }.not_to raise_exception
     end
 
@@ -85,7 +85,7 @@ describe Param do
     end
 
     it 'does not freak out if set() was never called' do
-      Param.reset
+      Param.send :reset
       expect{ Param.get_target(:foo) }.not_to raise_exception
     end
       
@@ -103,7 +103,7 @@ describe Param do
     end
 
     it 'does not freak out if set_logger() was never called' do
-      Param.reset
+      Param.send :reset
       expect{ Param.get_logger }.not_to raise_exception
     end
 
