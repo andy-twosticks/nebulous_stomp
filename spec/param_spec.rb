@@ -1,4 +1,3 @@
-require 'spec_helper'
 require 'nebulous_stomp/param'
 
 include NebulousStomp
@@ -6,8 +5,10 @@ include NebulousStomp
 
 describe Param do
 
-  before      { Param.reset }
-  after(:all) { Param.reset }
+  before      { Param.send :reset }
+  after(:all) { Param.send :reset }
+
+  let(:target1) { Target.new(name: 'foo', receiveQueue: '/queue/foo', sendQueue: '/queue/bar') }
 
 
   describe "Param.set" do
@@ -35,30 +36,13 @@ describe Param do
 
   describe "Param.add_target" do
 
-    let(:hash1) { {receiveQueue: '/queue/foo', sendQueue: '/queue/bar'} }
-
-    it "rejects unkown values in the param string for the target" do
-      expect { Param.add_target(:foo, {:notAValidThing => 14}) }.to \
-        raise_exception NebulousError
-
-    end
-
-    it "expects both a send queue and a receive queue" do
-      h = {receiveQueue: '/queue/foo'}
-      expect{ Param.add_target(:foo, h) }.to raise_exception(NebulousError)
-
-      h = {sendQueue: '/queue/foo'}
-      expect{ Param.add_target(:foo, h) }.to raise_exception(NebulousError)
+    it "rejects a target that's not a Target" do
+      expect { Param.add_target(:notAValidThing => 14) }.to raise_exception NebulousError
     end
 
     it 'works even when set has not been called' do
-      Param.reset
-      expect{ Param.add_target(:foo, hash1) }.not_to raise_exception
-    end
-
-    it "adds legitimate parameters to the target hash" do
-      Param.add_target(:foo, hash1)
-      expect( Param.get_all[:targets][:foo] ).to include(hash1)
+      Param.send :reset
+      expect{ Param.add_target(target1) }.not_to raise_exception
     end
 
   end # of Param:add_target
@@ -89,21 +73,20 @@ describe Param do
   describe "Param.get_target" do
 
     before do
-      @targ = {receiveQueue: 'foo', sendQueue: 'bar'}
-      Param.add_target(:one, @targ)
+      Param.add_target(target1)
     end
 
-    it "throws an exception if you ask for a target it doesn't have" do
-      expect{ Param.get_target(:two) }.to raise_exception(NebulousError)
+    it "returns nil if you ask for a target it doesn't have" do
+      expect( Param.get_target(:two) ).to be_nil
     end
 
-    it "returns the target hash corresponding to the name" do
-      expect( Param.get_target(:one) ).to include(@targ)
+    it "returns the Target corresponding to the name" do
+      expect( Param.get_target(:foo) ).to eq target1
     end
 
     it 'does not freak out if set() was never called' do
-      Param.reset
-      expect{ Param.get_target(:one) }.not_to raise_exception
+      Param.send :reset
+      expect{ Param.get_target(:foo) }.not_to raise_exception
     end
       
   end # of get_target
@@ -120,7 +103,7 @@ describe Param do
     end
 
     it 'does not freak out if set_logger() was never called' do
-      Param.reset
+      Param.send :reset
       expect{ Param.get_logger }.not_to raise_exception
     end
 

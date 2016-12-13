@@ -1,177 +1,156 @@
 require 'json'
+require 'forwardable'
 
 require_relative 'stomp_handler'
+require_relative 'msg/header'
+require_relative 'msg/body'
 
 
 module NebulousStomp
 
 
   ## 
-  # A class to encapsulate a Nebulous message (which is built on top of a
-  # STOMP message)
+  # A class to encapsulate a Nebulous message (which is built on top of a STOMP message)
   #
-  # Note that this class REPLACES the old NebResponse class from 0.1.0. There
-  # are differences:
-  #     * response.body -> message.stomp_body
-  #     * response.headers -> message.stomp_headers
-  #     * to_cache now returns a Hash, not a JSON string
+  # This class is entirely read-only, except for reply_id, which is set by Request when the
+  # message is sent.
+  #
+  # Much of this class is handled by two helper classes: the message headers are handled by
+  # Msg::Header and the message body by Msg::Body. You should look at them, too, for the full
+  # picture.
   #
   class Message
+    extend Forwardable
 
-    # Might be nil: parsed from incoming messages; set by StompHandler on send
-    attr_accessor :reply_id
+    def_delegators :@header, :stomp_headers, :reply_to, :in_reply_to, :reply_id, :content_type,
+                             :reply_id=, :content_is_json?, :headers_for_stomp
 
-    # Might be nil: only caught on messages that came directly from STOMP
-    attr_reader :stomp_headers, :stomp_body
-    
-    # The content type of the message
-    attr_reader :content_type
-
-    # The Nebulous Protocol
-    # Note that if you happen to pass an array as @params, it's actually
-    # writable, which is not ideal.
-    attr_reader :verb, :params, :desc
-    attr_reader :reply_to, :in_reply_to 
-
-
-    class << self
-
-
-      ##
-      # Build a Message from its components.
-      #
-      # Note that we assume a content type of JSON. But if we are building a
-      # message by hand in Ruby, this is only reasonable.
-      #
-      # You must pass a verb; you can pass nil for all the other values.
-      #
-      # * replyTo - the queue to reply to if this is a Request
-      # * inReplyTo - the reply ID if this is a Response
-      # * verb, params, desc - The Protocol; the message to pass
-      #
-      def from_parts(replyTo, inReplyTo, verb, params, desc)
-        raise ArgumentError, "missing parts" unless verb
-
-        NebulousStomp.logger.debug(__FILE__){ "New message from parts" }
-
-        p = 
-          case params
-            when NilClass then nil
-            when Array    then params.dup
-            else params.to_s
-          end
-
-        self.new( replyTo:     replyTo.to_s,
-                  inReplyTo:   inReplyTo.to_s,
-                  verb:        verb.to_s,
-                  params:      p,
-                  desc:        desc.nil? ? nil : desc.to_s,
-                  contentType: 'application/json' )
-
-      end
-
-
-      ##
-      # Build a Message that replies to an existing Message
-      #
-      # * msg - the Nebulous::Message that you are replying to
-      # * verb, params, desc - the new message Protocol 
-      #
-      def in_reply_to(msg, verb, params=nil, desc=nil, replyTo=nil)
-        raise ArgumentError, 'bad message' unless msg.kind_of? Message
-
-        NebulousStomp.logger.debug(__FILE__){ "New message reply" }
-
-        p = 
-          case params
-            when NilClass then nil
-            when Array    then params.dup
-            else params.to_s
-          end
-
-        m = msg.clone
-        self.new( replyTo:     replyTo.to_s,
-                  verb:        verb.to_s,
-                  params:      p,
-                  desc:        desc.to_s,
-                  inReplyTo:   m.reply_id,
-                  contentType: m.content_type )
-
-      end
-      
-
-      ##
-      # Build a Message from a (presumably incoming) STOMP message
-      #
-      def from_stomp(stompMsg)
-        raise ArgumentError, 'not a stomp message' \
-          unless stompMsg.kind_of? Stomp::Message
-
-        NebulousStomp.logger.debug(__FILE__){ "New message from STOMP" }
-
-        s = Marshal.load( Marshal.dump(stompMsg) )
-        obj = self.new( stompHeaders: s.headers,
-                        stompBody:    s.body     )
-
-      end
-
-
-      ##
-      # To build a Nebmessage from a record in the Redis cache
-      #
-      # See #to_cache for details of the hash that Redis should be storing
-      # 
-      def from_cache(json)
-        raise ArgumentError, "That can't be JSON, it's not a string" \
-          unless json.kind_of? String
-
-        NebulousStomp.logger.debug(__FILE__){ "New message from cache" }
-
-        # Note that the message body at this point, for a JSON message, is
-        # actually encoded to JSON *twice* - the second time was when the cache
-        # hash as a whole was encoded for store in Redis. the JSON gem copes
-        # with this so long as the whole string is not double-encoded.
-        hash = JSON.parse(json, :symbolize_names => true)
-        raise ArgumentError, 'Empty cache entry' if hash == {}
-
-        # So now if the content type is JSON then the body is still JSON now.
-        # It's only the rest of the cache hash that is a now a hash. Confused?
-        # Now join us for this weeks' episode...
-        self.new( hash.clone )
-
-      rescue JSON::ParserError => err  
-        raise ArgumentError, "Bad JSON: #{err.message}"
-      end
-
-    end
-    ##
-
+    def_delegators :@body, :stomp_body, :body, :verb, :params, :desc,
+                           :body_to_h, :protocol_json, :body_for_stomp
 
     alias :parameters  :params
     alias :description :desc
 
 
-    def to_s
-      "<Message[#{@reply_id}] to:#{@reply_to} r-to:#{@in_reply_to} " \
-        << "v:#{@verb}>"
+    class << self
 
-    end
+      ##
+      # :call-seq: 
+      # Message.in_reply_to(message, args) -> Message
+      #
+      # Build a Message that replies to an existing Message
+      #
+      #     * msg  - the Nebulous::Message that you are replying to
+      #     * args - hash as per Message.new
+      #
+      # See also #respond, #respond_with_protocol, etc, etc. (which you are probably better off
+      # calling, to be honest).
+      #
+      # Note that this method absolutely enforces the protocol with regard to the content type and
+      # (of course) the id of the message it is replying to; for example, even if you pass a
+      # different content type it will take the content type of the msg in preference. If you want
+      # something weirder, you will have to use Message.new.
+      #
+      def in_reply_to(msg, args)
+        fail ArgumentError, 'bad message'             unless msg.kind_of? Message
+        fail ArgumentError, 'bad hash'                unless args.kind_of? Hash
+        fail ArgumentError, 'message has no reply ID' unless msg.reply_id
+
+        NebulousStomp.logger.debug(__FILE__){ "New message in reply to #{msg}" }
+
+        hash = { inReplyTo:   msg.reply_id,
+                 contentType: msg.content_type }
+
+        self.new(args.merge hash)
+      end
+      
+      ##
+      # :call-seq: 
+      # Message.from_stomp(stompmessage) -> Message
+      #
+      # Build a Message from a (presumably incoming) STOMP message; stompmessage must be a
+      # Stomp::Message.
+      #
+      def from_stomp(stompMsg)
+        fail ArgumentError, 'not a stomp message' unless stompMsg.kind_of? Stomp::Message
+        NebulousStomp.logger.debug(__FILE__){ "New message from STOMP" }
+
+        s = Marshal.load( Marshal.dump(stompMsg) )
+        self.new(stompHeaders: s.headers, stompBody: s.body)
+      end
+
+      ##
+      # :call-seq: 
+      # Message.from_cache(hash) -> Message
+      #
+      # To build a Nebmessage from a record in the Redis cache.
+      #
+      # See #to_h for details of the hash that Redis should be storing
+      # 
+      def from_cache(json)
+        fail ArgumentError, "That can't be JSON, it's not a string" unless json.kind_of? String
+        NebulousStomp.logger.debug(__FILE__){ "New message from cache" }
+
+        # Note that the message body at this point, for a JSON message, is actually encoded to JSON
+        # *twice* - the second time was when the cache hash as a whole was encoded for store in
+        # Redis. the JSON gem copes with this so long as the whole string is not double-encoded.
+        hash = JSON.parse(json, :symbolize_names => true)
+        fail ArgumentError, 'Empty cache entry' if hash == {}
+
+        # So now if the content type is JSON then the body is still JSON now. It's only the rest of
+        # the cache hash that is a now a hash. Confused? Now join us for this weeks' episode...
+        self.new( hash.clone )
+
+      rescue JSON::ParserError => err  
+        fail ArgumentError, "Bad JSON: #{err.message}"
+      end
+
+    end # class << self
 
 
     ##
-    # true if the content type appears to be JSON-y
+    # Create a new message,
     #
-    def content_is_json?
-      @content_type =~ /json$/i ? true : false
+    # There are three ways that a message could get created:
+    #
+    #     1. The user could create one directly.
+    #
+    #     2. A message could be created from an incoming STOMP message, in which case we should
+    #        call Message.from_stomp to create it.
+    #
+    #     3. A message could be created because we have retreived it from the Redis cache, in which
+    #        case we should call Message.from_cache to create it (and, note, it will originally 
+    #        have been created in one of the other two ways...)
+    #
+    # The full list of useful hash keys is (as per Message.from_cache, #to_h):
+    #
+    #     * :body                 -- the message body
+    #     * :contentType          -- Stomp content type string
+    #     * :description / :desc  -- part of The Protocol
+    #     * :inReplyTo            -- message ID that message is a response to
+    #     * :parameters / :params -- part of The Protocol
+    #     * :replyId              -- the 'unique' ID of this Nebulous message
+    #     * :replyTo              -- for a request, the queue to be used for the response
+    #     * :stompBody            -- for a message from Stomp, the raw Stomp message body
+    #     * :stompHeaders         -- for a message from Stomp, the raw Stomp Headers string
+    #     * :verb                 -- part of The Protocol
+    #
+    def initialize(hash)
+      @header = Msg::Header.new(hash)
+      @body = Msg::Body.new(content_is_json?, hash)
     end
 
+    def to_s
+      "<Message[#{reply_id}] to:#{reply_to} r-to:#{in_reply_to} v:#{verb}>"
+    end
 
     ##
-    # Output a hash for serialization to the cache.
+    # Output a hash for serialization to the Redis cache.
     #
     # Currently this looks like:
     #    { stompHeaders: @stomp_headers,
     #      stompBody:    @stomp_body,
+    #      body:         @body
     #      verb:         @verb,
     #      params:       @params,
     #      desc:         @desc,
@@ -180,186 +159,74 @@ module NebulousStomp
     #      inReplyTo:    @in_reply_to,
     #      contentType:  @content_type }
     #
-    def to_cache
-      { stompHeaders: @stomp_headers,
-        stompBody:    @stomp_body,
-        verb:         @verb,
-        params:       @params.kind_of?(Enumerable) ? @params.dup : @params,
-        desc:         @desc,
-        replyTo:      @reply_to,
-        replyId:      @reply_id,
-        inReplyTo:    @in_reply_to,
-        contentType:  @content_type }
-
+    # Note that if :stompBody is set then :body will be nil. This is to attempt to reduce
+    # duplication of what might be a rather large string.
+    #
+    def to_h
+      @header.to_h.merge @body.to_h
     end
 
+    alias :to_cache :to_h  # old name
 
     ##
-    # Return the hash of additional headers for the Stomp gem
+    # :call-seq: 
+    # message.respond_with_protocol(verb, params=[], desc="") -> queue, Message
     #
-    def headers_for_stomp
-      headers = { "content-type" => @content_type, 
-                  "neb-reply-id" => @reply_id }
-
-      headers["neb-reply-to"]    = @reply_to    if @reply_to
-      headers["neb-in-reply-to"] = @in_reply_to if @in_reply_to
-
-      headers
+    # Repond with a message using The Protocol.
+    #
+    def respond_with_protocol(verb, params=[], desc="")
+      fail NebulousError, "Don't know which queue to reply to" unless reply_to
+      
+      hash = {verb: verb, params: params, desc: desc}
+      [ reply_to, Message.in_reply_to(self, hash) ]
     end
-
 
     ##
-    # Return a body object for the Stomp gem
+    # :call-seq: 
+    # message.respond_with_protocol(body) -> queue, Message
     #
-    def body_for_stomp
-      hash = protocol_hash
+    # Repond with a message body (presumably a custom one that's non-Protocol).
+    # 
+    def respond(body)
+      fail NebulousError, "Don't know which queue to reply to" unless reply_to
 
-      if content_is_json?
-        hash.to_json
-      else
-        hash.map {|k,v| "#{k}: #{v}" }.join("\n") << "\n\n"
-      end
+      # Easy to do by mistake, pain in the arse to work out what's going on if you do
+      fail ArgumentError, "Respond takes a body, not a message" if body.is_a? Message 
+
+      mess = Message.in_reply_to(self, body: body)
+      [ reply_to, mess ]
     end
-
 
     ##
-    # :call-seq:
-    #   message.body_to_h -> (Hash || nil)
+    # :call-seq: 
+    # message.respond_with_success -> queue, Message
     #
-    # If the body is in JSON, return a hash.
-    # If body is nil, or is not JSON, then return nil; don't raise an exception
+    # Make a new 'success verb' message in response to this one.
     #
-    def body_to_h
-      x = StompHandler.body_to_hash(stomp_headers, stomp_body, @content_type)
-      x == {} ? nil : x
+    def respond_with_success
+      fail NebulousError, "Don't know which queue to reply to" unless reply_to
+      respond_with_protocol('success')
     end
 
+    alias :respond_success :respond_with_success # old name
 
     ##
-    # Return the message body formatted for The Protocol, in JSON.
+    # :call-seq: 
+    # message.respond_with_error(error, fields=[]) -> queue, Message
     #
-    # Raise an exception if the message body doesn't follow the protocol.
+    # Make a new 'error verb' message in response to this one.
     #
-    # (We use this as the key for the Redis cache)
+    # Error can be a string or an exception. Fields is an arbitrary array of values, designed as a
+    # list of the parameter keys with problems; but of course you can use it for whatever you like.
     #
-    def protocol_json
-      raise NebulousError, "no protocol in this message!" unless @verb
-      protocol_hash.to_json
+    def respond_with_error(err, fields=[])
+      fail NebulousError, "Don't know which queue to reply to" unless reply_to
+      respond_with_protocol('error', Array(fields).flatten.map(&:to_s), err.to_s)
     end
 
+    alias :respond_error :respond_with_error # old name
 
-    ##
-    # Make a new 'success verb' message in response to this one
-    #
-    # returns [queue, message] so you can just pass it to
-    # stomphandler.send_message.
-    #
-    def respond_success
-      raise NebulousError, "Don''t know who to reply to" unless @reply_to
-
-      NebulousStomp.logger.info(__FILE__) do
-        "Responded to #{self} with 'success' verb"
-      end
-
-      [ @reply_to, Message.in_reply_to(self, 'success') ]
-    end
-
-
-    ##
-    # Make a new 'error verb' message in response to this one
-    #
-    # err can be a string or an exception
-    #
-    # returns [queue, message] so you can just pass it to
-    # stomphandler.send_message.
-    #
-    def respond_error(err,fields=[])
-      raise NebulousError, "Don''t know who to reply to" unless @reply_to
-
-      NebulousStomp.logger.info(__FILE__) do
-        "Responded to #{self} with 'error': #{err}" 
-      end
-
-      reply = Message.in_reply_to(self, 'error', fields, err.to_s)
-
-      [ @reply_to, reply ]
-    end
-
-
-    private
-
-
-    ##
-    # Create a record -- note that you can't call this directly on the class;
-    # you have to call Message.from_parts, .from_stomp, .from_cache or
-    # .in_reply_to.
-    #
-    def initialize(hash)
-      @stomp_headers = hash[:stompHeaders]
-      @stomp_body    = hash[:stompBody]
-
-      @verb         = hash[:verb]
-      @params       = hash[:params]
-      @desc         = hash[:desc]
-      @reply_to     = hash[:replyTo]
-      @reply_id     = hash[:replyId]
-      @in_reply_to  = hash[:inReplyTo]
-      @content_type = hash[:contentType]
-
-      fill_from_message
-    end
-
-
-    ##
-    # Return The Protocol of the message as a hash.
-    #
-    def protocol_hash
-      h = {verb: @verb}
-      h[:parameters]  = @params unless @params.nil?
-      h[:description] = @desc   unless @desc.nil?
-
-      h
-    end
-
-
-    ##
-    # Fill all the other attributes, if you can, from @stomp_headers and
-    # @stomp_body.
-    #
-    def fill_from_message
-
-      if @stomp_headers
-        @content_type ||= @stomp_headers['content-type']
-        @reply_id     ||= @stomp_headers['neb-reply-id']
-        @reply_to     ||= @stomp_headers['neb-reply-to'] 
-        @in_reply_to  ||= @stomp_headers['neb-in-reply-to']
-      end
-
-      # decode the body, which should either be a JSON string or a series of
-      # text fields. And use the body to set Protocol attributes.
-      if @stomp_body && !@stomp_body.empty?
-
-        raise "body is not a string, something is very wrong here!" \
-          unless @stomp_body.kind_of? String
-
-        h = StompHandler.body_to_hash( @stomp_headers,
-                                       @stomp_body,
-                                       @content_type )
-
-        @verb   ||= h["verb"]
-        @params ||= h["parameters"]  || h["params"]
-        @desc   ||= h["description"] || h["desc"]
-
-        # Assume that if verb is missing, the other two are just part of a
-        # response which has nothing to do with the protocol
-        @params = @desc = nil unless @verb
-      end
-
-      self
-    end
-
-  end
-  ##
+  end # Message
 
 
 end

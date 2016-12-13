@@ -1,5 +1,4 @@
 require 'time'
-require 'spec_helper'
 
 require 'nebulous_stomp/stomp_handler'
 require 'nebulous_stomp/message'
@@ -55,78 +54,6 @@ describe StompHandler do
   let(:msg2) do
     stomp_message('application/text', 'verb:Bar', client.calc_reply_id)
   end
-
-
-  describe 'StompHandler.body_to_hash' do
-
-    it "raises an error unless headers is a hash" do
-      expect{ StompHandler.body_to_hash() }.to raise_exception ArgumentError
-
-      expect{ StompHandler.body_to_hash('foo') }.
-        to raise_exception ArgumentError
-
-      expect{ StompHandler.body_to_hash('foo', 'bar') }.
-        to raise_exception ArgumentError
-
-      expect{ StompHandler.body_to_hash({}, 'baz') }.not_to raise_exception
-    end
-
-    context "when the content type is JSON" do
-
-      it "parses the json" do
-        body = {'one' => 'two', 'three' => [4,5]}
-        msg = stomp_message('application/json', body.to_json)
-        expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq body
-
-        body = [ {'one' => 2, 'three' => 4}, {'five' => 6} ]
-        msg = stomp_message('application/json', body.to_json)
-        expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq body
-      end
-
-    end
-
-    context "when the content type is not JSON" do
-
-      it "assumes text lines in key:value format" do
-        # Note that all values will be strings, and we can't support arrays.
-        result = {'one' => 'two', 'three' => '4'}
-        body = result.map{|k,v| "#{k}:#{v}" }.join("\n")
-        msg = stomp_message('application/text', body )
-
-        expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq result
-      end
-
-    end
-
-    it "allows the caller to override the content type" do
-      result = {'one' => 'two', 'three' => '4'}
-      body = result.map{|k,v| "#{k}:#{v}" }.join("\n")
-      msg = stomp_message('application/json', body )
-
-      expect( StompHandler.body_to_hash( msg.headers, 
-                                         msg.body, 
-                                         'application/text') ).to eq result
-
-    end
-
-    it "returns a hash or an array of hashes" do
-      # lets check some corner cases to ensure this
-      msg = stomp_message('appplication/json', ''.to_json)
-      expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq({})
-
-      msg = stomp_message('appplication/json', nil.to_json)
-      expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq({})
-
-      msg = stomp_message('appplication/text', '')
-      expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq({})
-
-      msg = stomp_message('appplication/text', nil)
-      expect( StompHandler.body_to_hash(msg.headers, msg.body) ).to eq({})
-    end
-
-
-  end
-  ##
 
 
   describe "StompHandler.with_timeout" do
@@ -265,7 +192,7 @@ describe StompHandler do
     # We're kind of navel gazing here because send_message is just one line: a
     # call to client.publish. Still, call it a warming up exercise....
     
-    let(:mess) { NebulousStomp::Message.from_parts(nil, nil, 'foo', nil, nil) }
+    let(:mess) { NebulousStomp::Message.new(verb: 'foo', params: nil, desc: nil) }
 
     before do
       handler.stomp_connect

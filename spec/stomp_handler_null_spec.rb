@@ -1,7 +1,4 @@
-require 'spec_helper'
-
 require 'time'
-
 require 'nebulous_stomp/stomp_handler_null'
 
 include NebulousStomp
@@ -22,17 +19,6 @@ describe StompHandlerNull do
   end
 
 
-  describe 'StompHandlerNull.body_to_hash' do
-
-    it "returns a hash" do
-      expect{ StompHandlerNull.body_to_hash({}, 'baz') }.not_to raise_exception
-      expect( StompHandlerNull.body_to_hash({}, 'baz') ).to be_a_kind_of Hash
-    end
-
-  end
-  ##
-
-
   describe "#initialize" do
 
     it "takes an initialization hash" do
@@ -46,9 +32,10 @@ describe StompHandlerNull do
   describe '#insert_fake' do
 
     it 'sets the message to send' do
-      handler.insert_fake( Message.from_parts('', '','foo', 'bar', 'baz') )
-      expect( handler.fake_mess ).to be_a_kind_of NebulousStomp::Message
-      expect( handler.fake_mess.verb ).to eq 'foo'
+      handler.insert_fake( Message.new(verb: 'foo', params: 'bar', desc: 'baz') )
+      expect( handler.fake_messages            ).to be_a_kind_of Array
+      expect( handler.fake_messages.first      ).to be_a_kind_of NebulousStomp::Message
+      expect( handler.fake_messages.first.verb ).to eq 'foo'
     end
 
   end
@@ -62,7 +49,7 @@ describe StompHandlerNull do
     end
 
     it 'returns true if fake_message was called' do
-      handler.insert_fake( Message.from_parts('','', 'one', 'two', 'three') )
+      handler.insert_fake( Message.new(verb: 'one', params: 'two', desc: 'three') )
       expect( handler.connected? ).to be_truthy
     end
 
@@ -92,7 +79,7 @@ describe StompHandlerNull do
 
 
   describe "send_message" do
-    let(:mess) { NebulousStomp::Message.from_parts(nil, nil, 'foo', nil, nil) }
+    let(:mess) { NebulousStomp::Message.new(verb: 'foo') }
 
     it "accepts a queue name and a Message" do
       expect{ handler.send_message('foo', mess) }.not_to raise_exception
@@ -109,10 +96,10 @@ describe StompHandlerNull do
   describe "#listen" do
 
     def run_listen(secs)
-      got = nil
+      got = []
 
       handler.listen('/queue/foo') do |m|
-        got = m
+        got << m
       end
       sleep secs
 
@@ -120,12 +107,18 @@ describe StompHandlerNull do
     end
 
 
-    it "yields a Message" do
-      handler.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
-      gotMessage = run_listen(1)
+    it "yields each Message" do
+      handler.insert_fake( Message.new(verb: 'foo', params: 'bar', desc: 'baz') )
+      handler.insert_fake( Message.new(verb: 'one', params: 'two', desc: 'three') )
+      messages = run_listen(1)
 
-      expect(gotMessage).not_to be_nil
-      expect(gotMessage).to be_a_kind_of NebulousStomp::Message
+      expect(messages.first).not_to be_nil
+      expect(messages.first).to be_a_kind_of NebulousStomp::Message
+      expect(messages.first.verb).to eq "foo"
+
+      expect(messages.last).not_to be_nil
+      expect(messages.last).to be_a_kind_of NebulousStomp::Message
+      expect(messages.last.verb).to eq "one"
     end
 
   end
@@ -135,22 +128,28 @@ describe StompHandlerNull do
   describe "listen_with_timeout" do
 
     def run_listen_with_timeout(secs)
-      got = nil
+      got = []
       handler.listen_with_timeout('/queue/foo', secs) do |m|
-        got = m
+        got << m
       end
 
       got
     end
 
-    context "when there is a message" do
+    context "when there are messages" do
 
-      it "yields a Message" do
-        handler.insert_fake( Message.from_parts('', '', 'foo', 'bar', 'baz') )
-        gotMessage = run_listen_with_timeout(1)
+      it "yields each Message" do
+        handler.insert_fake( Message.new(verb: 'foo', params: 'bar', desc: 'baz') )
+        handler.insert_fake( Message.new(verb: 'one', params: 'two', desc: 'three') )
+        messages = run_listen_with_timeout(1)
 
-        expect( gotMessage ).not_to be_nil
-        expect( gotMessage ).to be_a_kind_of NebulousStomp::Message
+        expect( messages.first ).not_to be_nil
+        expect( messages.first ).to be_a_kind_of NebulousStomp::Message
+        expect(messages.first.verb).to eq "foo"
+
+        expect(messages.last).not_to be_nil
+        expect(messages.last).to be_a_kind_of NebulousStomp::Message
+        expect(messages.last.verb).to eq "one"
       end
 
     end

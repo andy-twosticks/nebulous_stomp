@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 require 'nebulous_stomp/redis_handler'
 
 include NebulousStomp
