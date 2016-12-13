@@ -50,6 +50,12 @@ class Gimme
 
         when "gimmemessage" 
           msg.respond("weird message body")
+
+        when "gimmebigmessage"
+          body = big_body msg.params
+          msg.respond body
+
+        else fail "unknown verb #{msg.verb} in Gimme"
       end
 
     @listener.reply(queue, message)
@@ -57,6 +63,16 @@ class Gimme
   rescue
     puts "ERROR: #{$!}" 
     $!.backtrace.each{|e| puts e }
+  end
+
+  def big_body(params)
+    kb = params.to_f; fail "not a size" if kb == 0
+
+    body = "foo"
+    body << "Q" * (1024 * kb)
+    body << "bar"
+
+    body
   end
 
 end

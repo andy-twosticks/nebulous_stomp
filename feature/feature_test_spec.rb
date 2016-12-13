@@ -60,7 +60,7 @@ describe 'stomp use cases:' do
       when :listen
         messages = []
         handler.listen_with_timeout(queue, 1) {|msg| messages << msg; false } rescue nil
-        return messages
+        return messages, handler.connected?
     end
   end
 
@@ -102,6 +102,45 @@ describe 'stomp use cases:' do
       expect( response      ).to be_kind_of(NebulousStomp::Message)
       expect( response.verb ).to be_nil
       expect( response.body ).to eq "weird message body"
+    end
+
+    it "can send a message >32k" do
+      message  = NebulousStomp::Message.new( verb: 'gimmebigmessage', 
+                                             params: "32", 
+                                             contentType: 'text' )
+
+      response = NebulousStomp::Request.new("featuretest", message).send_no_cache
+
+      expect( response           ).to be_kind_of(NebulousStomp::Message)
+      expect( response.body.size ).to be > (1024 * 32)
+      expect( response.body[0..2] ).to eq "foo"
+      expect( response.body[-3..-1] ).to eq "bar"
+    end
+
+    it "can send a message >128k" do
+      message  = NebulousStomp::Message.new( verb: 'gimmebigmessage', 
+                                             params: "128", 
+                                             contentType: 'text' )
+
+      response = NebulousStomp::Request.new("featuretest", message).send_no_cache
+
+      expect( response           ).to be_kind_of(NebulousStomp::Message)
+      expect( response.body.size ).to be > (1024 * 128)
+      expect( response.body[0..2] ).to eq "foo"
+      expect( response.body[-3..-1] ).to eq "bar"
+    end
+
+    it "can send a message >512k" do
+      message  = NebulousStomp::Message.new( verb: 'gimmebigmessage', 
+                                             params: "512", 
+                                             contentType: 'text' )
+
+      response = NebulousStomp::Request.new("featuretest", message).send_no_cache
+
+      expect( response           ).to be_kind_of(NebulousStomp::Message)
+      expect( response.body.size ).to be > (1024 * 512)
+      expect( response.body[0..2] ).to eq "foo"
+      expect( response.body[-3..-1] ).to eq "bar"
     end
 
   end
@@ -158,12 +197,13 @@ describe 'stomp use cases:' do
       response2 = NebulousStomp::Request.new(target, msg2).send_no_cache
 
       # Now read the messages left on the queue
-      leftovers = stomp_backdoor(:listen, target.send_queue)
+      leftovers, connected = stomp_backdoor(:listen, target.send_queue)
 
       expect( response2      ).to be_kind_of NebulousStomp::Message
       expect( response2.verb ).to eq "foo"
       expect( leftovers.map(&:verb) ).to include("backdoor")
       expect( leftovers.map(&:verb) ).not_to include("foo")
+      expect( connected ).to be_truthy
     end
 
   end
