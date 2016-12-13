@@ -36,6 +36,7 @@ module NebulousStomp
     def initialize(target, message)
       @target  = parse_target(target)
       @message = parse_message(message, @target)
+      NebulousStomp.logger.debug(__FILE__) { "New Request for verb #{@message.verb}" }
 
       # Get a connection to StompHandler ASAP and set reply_id on @message
       ensure_stomp_connected if NebulousStomp.on?
@@ -58,6 +59,8 @@ module NebulousStomp
     #
     def send_no_cache(mtimeout=message_timeout)
       return nil unless NebulousStomp.on?
+      NebulousStomp.logger.info(__FILE__) { "Sending request to target #{@target.name}" }
+
       ensure_stomp_connected
       neb_qna(mtimeout)
     ensure

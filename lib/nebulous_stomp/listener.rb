@@ -49,6 +49,8 @@ module NebulousStomp
         when queue.respond_to?(:to_s)          then @queue = queue.to_s
         else fail ArgumentError, "Unknown object passed as queue"
       end
+
+      NebulousStomp.logger.debug(__FILE__) { "Listening on #@queue" }
     end
  
     ##
@@ -77,6 +79,7 @@ module NebulousStomp
     # Message class, for example by calling `message.respond_with_success`.
     #
     def reply(queue, message)
+      NebulousStomp.logger.debug(__FILE__) { "Replying to #{queue}" }
       stomp_handler.send_message(queue, message)
       self
     end
