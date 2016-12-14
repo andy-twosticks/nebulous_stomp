@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Andy Jones"]
   spec.email         = ["andy.jones@twosticksconsulting.co.uk"]
   spec.summary       = %q{Handles request-and-response messaging via STOMP}
-  spec.description   = <<~DESC
+  spec.description   = <<-DESC.gsub(/^\s+/, "")
     A library and protocol to allow disperate systems to ask a question via
     STOMP and receive an answer in return. Optionally, answers can be cached in
     Redis.
@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.requirements << 'STOMP Messaging server'
   spec.requirements << 'Redis server (optional)'
 
-  spec.post_install_message = <<~MESSAGE
+  spec.post_install_message = <<-MESSAGE.gsub(/^\s+/, "")
     Nebulous has been installed ...sort of... ::waves arms noncomittedly::
   MESSAGE
 
