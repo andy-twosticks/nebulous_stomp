@@ -202,7 +202,7 @@ module NebulousStomp
     # Write to the Redis cache
     #
     def cache_write(response, timeout)
-      redis_handler.set(@message.protocol_json, response.to_h, ex: timeout)
+      redis_handler.set(@message.protocol_json, response.to_h.to_json, ex: timeout)
     end
 
   end # Request

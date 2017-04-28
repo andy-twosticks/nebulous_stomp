@@ -216,6 +216,11 @@ describe Request do
       expect( response.verb ).to eq "frog"
     end
 
+    fit "writes the response to the cache as JSON" do
+      response = request1.send
+      expect{ JSON.parse @redis_handler.fake_pair.values.first }.not_to raise_exception
+    end
+
     it "allows you to specify a message timeout" do
       expect{ request1.send(3) }.not_to raise_exception
     end
