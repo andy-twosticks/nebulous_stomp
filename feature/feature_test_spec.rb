@@ -96,12 +96,19 @@ describe 'stomp use cases:' do
     end
 
     it "can respond to a message with a non-Protocol message" do
-      message  = NebulousStomp::Message.new(verb: 'gimmemessage', contentType: 'text')
+      message  = NebulousStomp::Message.new(verb: 'gimmemessage', contentType: 'application/json')
       response = NebulousStomp::Request.new("featuretest", message).send_no_cache
 
       expect( response      ).to be_kind_of(NebulousStomp::Message)
       expect( response.verb ).to be_nil
-      expect( response.body ).to eq "weird message body"
+      expect( response.body ).to eq(["weird message body", 12])
+    end
+
+    it "can respond with an empty array as the message body" do
+      message  = NebulousStomp::Message.new(verb: 'gimmeempty', contentType: 'application/json')
+      response = NebulousStomp::Request.new("featuretest", message).send_no_cache
+      expect( response      ).to be_kind_of(NebulousStomp::Message)
+      expect( response.body ).to eq([])
     end
 
     it "can send a message >32k" do

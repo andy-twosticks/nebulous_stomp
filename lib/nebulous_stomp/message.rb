@@ -135,6 +135,9 @@ module NebulousStomp
     #     * :stompHeaders         -- for a message from Stomp, the raw Stomp Headers string
     #     * :verb                 -- part of The Protocol
     #
+    # Note that body is taken to be a string if the content type is text, and is taken to be JSON
+    # if the content type is JSON. 
+    #
     def initialize(hash)
       @header = Msg::Header.new(hash)
       @body = Msg::Body.new(content_is_json?, hash)
@@ -185,7 +188,8 @@ module NebulousStomp
     # :call-seq: 
     # message.respond_with_protocol(body) -> queue, Message
     #
-    # Repond with a message body (presumably a custom one that's non-Protocol).
+    # Repond with a message body (presumably a custom one that's non-Protocol). If the content type
+    # is JSON, this can be an array or a Hash. If the content type is text, it must be a String.
     # 
     def respond(body)
       fail NebulousError, "Don't know which queue to reply to" unless reply_to

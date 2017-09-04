@@ -120,6 +120,12 @@ describe Message do
       expect( m.body   ).to eq "wigi wigi"
     end
 
+    it "leaves body alone if it\'s an empty array and there is no protocol and no stompbody" do
+      # rather than processing a nil stompbody and ending up with nil/NULL
+      m = Message.new(body: [])
+      expect( m.body ).to eq([])
+    end
+
     it 'takes the content type from the input arguments' do
       msg = Message.new( new_hash.merge(contentType: 'foo') )
       expect( msg.content_type ).to eq "foo"

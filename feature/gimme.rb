@@ -48,8 +48,11 @@ class Gimme
         when "gimmeprotocol" 
           msg.respond_with_protocol("foo", "bar", "baz")
 
+        when "gimmeempty"
+          msg.respond([])
+
         when "gimmemessage" 
-          msg.respond("weird message body")
+          msg.respond(["weird message body", 12])
 
         when "gimmebigmessage"
           body = big_body msg.params

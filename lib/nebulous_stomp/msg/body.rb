@@ -111,7 +111,8 @@ module NebulousStomp
         if @verb
           @body = protocol_hash
         elsif @body.nil? || @body.respond_to?(:empty?) && @body.empty?
-          @body = parse_stomp_body 
+          sb = parse_stomp_body 
+          @body = sb if sb
         end
 
         parse_body
