@@ -17,6 +17,7 @@ Nebulous	lib/nebulous/stomp_handler.rb	/^module Nebulous$/;"	m
 Nebulous	lib/nebulous/stomp_handler_null.rb	/^module Nebulous$/;"	m
 Nebulous	lib/nebulous/version.rb	/^module Nebulous$/;"	m
 NebulousError	lib/nebulous.rb	/^  class NebulousError < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
+NebulousStomp	lib/nebulous_stomp/version.rb	/^module NebulousStomp$/;"	m
 NebulousTimeout	lib/nebulous.rb	/^  class NebulousTimeout < StandardError; end$/;"	c	class:Nebulous	inherits:StandardError
 Param	lib/nebulous/param.rb	/^  module Param$/;"	m	class:Nebulous
 ParamDefaults	lib/nebulous/param.rb	/^    ParamDefaults = { stompConnectHash: {},$/;"	C	class:Nebulous.Param

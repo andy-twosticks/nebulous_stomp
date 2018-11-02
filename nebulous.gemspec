@@ -39,7 +39,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry-doc"
   spec.add_development_dependency "ripper-tags"
 
-  spec.add_runtime_dependency 'stomp',   '~>1.4'
+  # Stomp 1.4.5 currently has issues -- 2/11/18
+  spec.add_runtime_dependency 'stomp',   '1.4.4'
   spec.add_runtime_dependency 'redis',   '~>3.1'
   spec.add_runtime_dependency 'devnull', '~>0.1'
  
