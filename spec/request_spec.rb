@@ -1,36 +1,12 @@
-require 'nebulous_stomp/request'
-require 'nebulous_stomp/stomp_handler_null'
-require 'nebulous_stomp/redis_handler_null'
+require "stomp"
+require "nebulous_stomp/request"
+require "nebulous_stomp/stomp_handler_null"
+require "nebulous_stomp/redis_handler_null"
 
 include NebulousStomp
 
 
 describe Request do
-
-  before do
-    @stomp_hash = { hosts: [{ login:    'guest',
-                              passcode: 'guest',
-                              host:     '10.0.0.150',
-                              port:     61613,
-                              ssl:      false }],
-                    reliable: false }
-
-    @redis_hash = {host: '127.0.0.1', port: 6379, db: 0}
-
-    @stomp_handler = StompHandlerNull.new(@stomp_hash)
-    @redis_handler = RedisHandlerNull.new(@redis_hash)
-
-    NebulousStomp.init( :stompConnectHash => @stomp_hash, 
-                        :redisConnectHash => @redis_hash,
-                        :messageTimeout   => 5,
-                        :cacheTimeout     => 20 )
-
-    NebulousStomp.add_target( :accord, 
-                              :sendQueue      => "/queue/laplace.dev",
-                              :receiveQueue   => "/queue/laplace.out",
-                              :messageTimeout => 1 )
-
-  end
 
   def new_request(target, message)
     r = Request.new(target, message)
@@ -78,6 +54,37 @@ describe Request do
     request
   end
 
+  before(:each) do
+    # We shouldn't be calling Stomp or Redis in these tests. If we are, this will give us an error.
+    fakestomp = double("fakestomp")
+    fakeredis = double("fakeredis")
+    allow( Stomp::Client ).to receive(:new).and_return( fakestomp )
+    allow( Redis         ).to receive(:new).and_return( fakeredis )
+
+    @stomp_hash = { hosts: [{ login:    'guest',
+                              passcode: 'guest',
+                              host:     '10.0.0.150',
+                              port:     61613,
+                              ssl:      false }],
+                    reliable: false }
+
+    @redis_hash = {host: '127.0.0.1', port: 6379, db: 0}
+
+    @stomp_handler = StompHandlerNull.new(@stomp_hash)
+    @redis_handler = RedisHandlerNull.new(@redis_hash)
+
+    NebulousStomp.init( :stompConnectHash => @stomp_hash, 
+                        :redisConnectHash => @redis_hash,
+                        :messageTimeout   => 5,
+                        :cacheTimeout     => 20 )
+
+    NebulousStomp.add_target( :accord, 
+                              :sendQueue      => "/queue/laplace.dev",
+                              :receiveQueue   => "/queue/laplace.out",
+                              :messageTimeout => 1 )
+
+  end
+
 
   describe "Request.new" do
      
@@ -114,10 +121,10 @@ describe Request do
       expect( r.message.reply_to ).to eq target1.send_queue
     end
 
-  end
+  end # of Request.new
 
 
-  describe "message_timeout" do
+  describe "#message_timeout" do
 
     it "takes the timeout on the target over the default" do
       r = new_request(target2, message1)
@@ -129,20 +136,20 @@ describe Request do
       expect( r.message_timeout ).to eq 5
     end
 
-  end
+  end # of #message_timeout
 
 
-  describe "cache_timeout" do
+  describe "#cache_timeout" do
 
     it "returns the cache timeout value stored in Param" do
       r = new_request(target1, message1)
       expect( r.cache_timeout ).to eq 20
     end
 
-  end
+  end # of #cache_timeout
 
 
-  describe "send_no_cache" do
+  describe "#send_no_cache" do
 
     it "returns a response from StompHandler" do
       response = request1.send_no_cache
@@ -163,10 +170,10 @@ describe Request do
       expect( request.send_no_cache ).to be_nil
     end
 
-  end
+  end # of #send_no_cache
   
 
-  describe "clear_cache" do
+  describe "#clear_cache" do
 
     it "removes the redis cache for a single request" do
       @redis_handler.insert_fake('foo', 'bar')
@@ -189,10 +196,10 @@ describe Request do
       expect( r.clear_cache ).to eq r
     end
 
-  end
+  end # of #clear_cache
 
   
-  describe "send" do
+  describe "#send" do
 
     it "returns a Message object from STOMP the first time" do
       response = request1.send
@@ -216,7 +223,7 @@ describe Request do
       expect( response.verb ).to eq "frog"
     end
 
-    fit "writes the response to the cache as JSON" do
+    it "writes the response to the cache as JSON" do
       response = request1.send
       expect{ JSON.parse @redis_handler.fake_pair.values.first }.not_to raise_exception
     end
@@ -247,7 +254,7 @@ describe Request do
       expect( request.send ).to be_nil
     end
 
-  end
+  end # of #send
   
 
 end

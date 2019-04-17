@@ -1,6 +1,6 @@
-require 'nebulous_stomp/message'
+require "nebulous_stomp/message"
 
-require_relative 'helpers'
+require_relative "helpers"
 
 include NebulousStomp
 
@@ -24,7 +24,6 @@ describe Message do
     end
 
   end
-
 
   let(:new_hash_body) do
     { verb: 'Velma', parameters: 'Shaggy', description:'Scooby' }
@@ -66,14 +65,21 @@ describe Message do
 
   let(:msg_cache) { Message.from_cache( json_hash.to_json ) }
 
+  before(:each) do
+    # These tests should not call the Stomp gem.  Now if they do, we get an error, because our
+    # fakestomp object doesn't have any methods.
+    fakestomp = double("fakestomp")
+    allow( Stomp::Client ).to receive(:new).and_return( fakestomp )
+  end
 
-  describe 'Message.new' do
 
-    it 'returns a Message object' do
+  describe "Message.new" do
+
+    it "returns a Message object" do
       expect( msg_new ).to be_a_kind_of(Message)
     end
 
-    it 'sets protocol attributes when they are given' do
+    it "sets protocol attributes when they are given" do
       expect( msg_new.reply_to    ).to eq new_hash[:replyTo]
       expect( msg_new.in_reply_to ).to eq new_hash[:inReplyTo]
       expect( msg_new.verb        ).to eq new_hash[:verb]
@@ -126,7 +132,7 @@ describe Message do
       expect( m.body ).to eq([])
     end
 
-    it 'takes the content type from the input arguments' do
+    it "takes the content type from the input arguments" do
       msg = Message.new( new_hash.merge(contentType: 'foo') )
       expect( msg.content_type ).to eq "foo"
     end
@@ -141,11 +147,10 @@ describe Message do
       expect{ Message.new(body: 'bar')                 }.not_to raise_exception
     end
 
-  end
-  ##
+  end # of Message.new
 
 
-  describe 'Message.in_reply_to' do
+  describe "Message.in_reply_to" do
 
     it "requires a message to reply to and a hash" do
       expect{ Message.in_reply_to()             }.to raise_error ArgumentError
@@ -170,24 +175,23 @@ describe Message do
       expect( msg.in_reply_to ).to eq msg_new2.reply_id
     end
 
-  end
-  ##
+  end # of Message.in_reply_to
 
 
-  describe 'Message.from_stomp' do
+  describe "Message.from_stomp" do
 
-    it 'requires a Stomp::Message' do
+    it "requires a Stomp::Message" do
       expect{ Message.from_stomp        }.to raise_exception ArgumentError
       expect{ Message.from_stomp('foo') }.to raise_exception ArgumentError
       expect{ Message.from_stomp(smess) }.not_to raise_exception
     end
 
-    it 'sets stomp attributes' do
+    it "sets stomp attributes" do
       expect( msg_stomp.stomp_headers ).to include smess.headers
       expect( msg_stomp.stomp_body    ).to eq smess.body
     end
 
-    it 'still works if there are no Protocol attributes to set' do
+    it "still works if there are no Protocol attributes to set" do
       expect( msg_stomp.verb        ).to eq nil
       expect( msg_stomp.params      ).to eq nil
       expect( msg_stomp.desc        ).to eq nil
@@ -195,7 +199,7 @@ describe Message do
       expect( msg_stomp.in_reply_to ).to eq nil
     end
 
-    it 'sets the content type to whatever the headers say it is' do
+    it "sets the content type to whatever the headers say it is" do
       b = { verb:   'tom',
             params: 'dick',
             desc:   'harry' }.to_json
@@ -205,12 +209,11 @@ describe Message do
     end
 
     context "when the message body is text" do
-
-      it 'returns a Message object' do
+      it "returns a Message object" do
         expect( msg_stomp ).to be_a_kind_of Message
       end
 
-      it 'sets Protocol attributes if it can' do
+      it "sets Protocol attributes if it can" do
         body = {verb: 'Dougal', params: 'Florence', desc: 'Ermintrude'}
         mess = stomp_message('application/json', body.to_json, '23')
         msg  = Message.from_stomp(mess)
@@ -219,37 +222,31 @@ describe Message do
         expect( msg.desc        ).to eq 'Ermintrude'
         expect( msg.in_reply_to ).to eq '23'
       end
-
     end
 
-
     context "when the message body is JSON" do
-      
       let(:msg_stomp_json) do
         m = {verb: 'one', params: 'two', desc: 'three'}.to_json
         x = stomp_message('application/json', m, '19')
         Message.from_stomp(x)
       end
 
-      it 'returns a Message object' do
+      it "returns a Message object" do
         expect( msg_stomp_json ).to be_a_kind_of Message
       end
 
-      it 'sets Protocol attributes if it can' do
+      it "sets Protocol attributes if it can" do
         expect( msg_stomp_json.verb        ).to eq 'one'
         expect( msg_stomp_json.params      ).to eq 'two'
         expect( msg_stomp_json.desc        ).to eq 'three'
         expect( msg_stomp_json.in_reply_to ).to eq '19'
       end
-
     end
 
-  end
-  ##
+  end # of Message.from_stomp
 
 
-  describe 'Message.from_cache' do
-
+  describe "Message.from_cache" do
     let(:msg2) do
       x = { replyId:      '1234',
             contentType:  'application/json' }.to_json
@@ -257,8 +254,7 @@ describe Message do
       Message.from_cache(x)
     end
 
-
-    it 'requires some json in the right format' do
+    it "requires some json in the right format" do
       expect{ Message.from_cache              }.to raise_exception ArgumentError
       expect{ Message.from_cache('foo')       }.to raise_exception ArgumentError
       expect{ Message.from_cache({})          }.to raise_exception ArgumentError
@@ -277,7 +273,7 @@ describe Message do
       expect{ Message.from_cache(loony2.to_json) }.not_to raise_exception
     end
 
-    it 'still works if there are no Protocol attributes to set' do
+    it "still works if there are no Protocol attributes to set" do
       expect( msg2.verb        ).to eq nil
       expect( msg2.params      ).to eq nil
       expect( msg2.desc        ).to eq nil
@@ -285,7 +281,7 @@ describe Message do
       expect( msg2.in_reply_to ).to eq nil
     end
 
-    it 'sets Protocol attributes if it can' do 
+    it "sets Protocol attributes if it can" do 
       expect( msg_cache.verb        ).to eq 'tom'
       expect( msg_cache.params      ).to eq 'dick'
       expect( msg_cache.desc        ).to eq 'harry'
@@ -293,30 +289,27 @@ describe Message do
       expect( msg_cache.in_reply_to ).to eq '4321'
     end
 
-
     context "when the message body is JSON" do
       # msg_cache has a json body
 
-      it 'returns a Message object' do
+      it "returns a Message object" do
         expect( msg_cache ).to be_a_kind_of Message
       end
 
-      it 'sets the stomp attributes' do
+      it "sets the stomp attributes" do
         expect( msg_cache.stomp_headers ).
           to eq symbolise( json_hash[:stompHeaders] )
 
         expect( msg_cache.stomp_body    ).to eq json_hash[:stompBody]
       end
 
-      it 'sets the content type' do
+      it "sets the content type" do
         expect( msg_cache.content_type ).to eq json_hash[:contentType]
       end
 
     end
 
-
     context "when the message body is text" do
-
       let(:msg3_cache) do
           { stompHeaders: msg_stomp.stomp_headers,
             stompBody:    msg_stomp.stomp_body,
@@ -332,12 +325,11 @@ describe Message do
 
       let(:msg3) { Message.from_cache( msg3_cache.to_json ) }
 
-
-      it 'returns a Message object' do
+      it "returns a Message object" do
         expect( msg3 ).to be_a_kind_of Message
       end
 
-      it 'sets the stomp attributes' do
+      it "sets the stomp attributes" do
         heads = msg3_cache[:stompHeaders].each_with_object({}) do |(k,v),m|
           m[k.to_sym] = v
         end
@@ -346,34 +338,33 @@ describe Message do
         expect( msg3.stomp_body    ).to eq msg3_cache[:stompBody]
       end
 
-      it 'sets the content type' do
+      it "sets the content type" do
         expect( msg3.content_type ).to eq msg3_cache[:contentType]
       end
-
     end
 
-
-  end
-  ##
+  end # of Message.from_cache
 
 
-  describe '#parameters' do
-    it 'returns the same as @param' do
+  describe "#parameters" do
+
+    it "returns the same as @param" do
       expect(msg_new.parameters).to eq msg_new.params
     end
-  end
-  ##
+
+  end # of #parameters
 
 
-  describe '#description' do
-    it 'returns the same as @desc' do
+  describe "#description" do
+
+    it "returns the same as @desc" do
       expect(msg_new.description).to eq msg_new.desc
     end
-  end
-  ##
+
+  end # of #description
 
 
-  describe '#content_is_json?' do 
+  describe "#content_is_json?" do 
 
     it "returns true if the content type is JSON" do
       expect( msg_new.content_is_json? ).to be true
@@ -384,13 +375,12 @@ describe Message do
       expect( msg.content_type ).to eq "foo"
     end
 
-  end
-  ##
+  end # of #content_is_json?
 
 
-  describe '#to_h' do
+  describe "#to_h" do
 
-    it 'returns the message as a hash' do
+    it "returns the message as a hash" do
       hash = msg_new.to_h
 
       expect( hash ).to be_a_kind_of Hash
@@ -403,11 +393,11 @@ describe Message do
       expect( hash[:contentType] ).to match /json$/i 
     end
 
-    it 'always returns all the keys' do
+    it "always returns all the keys" do
       expect( msg_stomp.to_h.keys ).to include(*json_hash.keys)
     end
 
-    it "returns a hash that Message.from_cache doesn''t freak out over" do
+    it "returns a hash that Message.from_cache doesn't freak out over" do
       expect{ Message.from_cache(msg_cache.to_h.to_json) }.
         not_to raise_exception
 
@@ -415,12 +405,11 @@ describe Message do
       expect(mess.to_h).to include symbolise(json_hash)
     end
       
-
-  end
-  ##
+  end # of #to_h
 
 
-  describe '#protocol_json' do
+  describe "#protocol_json" do
+
     it "returns the Protocol as a JSON string" do
       hash = JSON.parse( msg_new.protocol_json, symbolize_names: true )
 
@@ -433,8 +422,8 @@ describe Message do
                      or include(description: 'Scooby')
 
     end
-  end
-  ##
+
+  end # of #protocol_json 
 
 
   describe "#body" do
@@ -462,13 +451,12 @@ describe Message do
       expect( nr.body ).to eq "foo"
     end
 
-  end
-  ##
+  end # of #body
 
 
-  describe '#headers_for_stomp' do
+  describe "#headers_for_stomp" do
 
-    it 'always returns a Hash' do
+    it "always returns a Hash" do
       expect( msg_new.headers_for_stomp   ).to be_a_kind_of Hash
       expect( msg_stomp.headers_for_stomp ).to be_a_kind_of Hash
       expect( msg_cache.headers_for_stomp ).to be_a_kind_of Hash
@@ -488,11 +476,10 @@ describe Message do
       expect( hdrs ).to include("neb-reply-id" => nil)
     end
 
-  end
-  ##
+  end # of #headers_for_stomp
 
 
-  describe '#body_for_stomp' do
+  describe "#body_for_stomp" do
 
     it "returns a JSON string for content type JSON" do
       expect{ JSON.parse(msg_cache.body_for_stomp) }.not_to raise_exception
@@ -533,11 +520,10 @@ describe Message do
 
     end
 
-  end
-  ##
+  end # of #body_for_stomp
 
 
-  describe '#respond_with_success' do
+  describe "#respond_with_success" do
 
     it "raises an error if we have no @reply_to" do
       expect{ msg_stomp.respond_with_success }.to raise_exception NebulousError
@@ -554,16 +540,15 @@ describe Message do
       expect( m.verb ).to eq 'success'
     end
 
-    it 'sets the content type from the source message' do
+    it "sets the content type from the source message" do
       _,m = msg_cache.respond_with_success
       expect( m.content_type ).to eq msg_cache.content_type
     end
 
-  end
-  ##
+  end # of #respond_with_success
 
 
-  describe '#respond_with_error' do
+  describe "#respond_with_error" do
     let(:err) { NebulousError.new("test error") }
 
     it "raises an error if we have no @reply_to" do
@@ -605,16 +590,15 @@ describe Message do
       expect( m.desc ).to eq err.message
     end
 
-    it 'sets the content type from the source message' do
+    it "sets the content type from the source message" do
       _,m = msg_cache.respond_with_error('foo')
       expect( m.content_type ).to eq msg_cache.content_type
     end
 
-  end
-  ##
+  end # of #respond_with_error
 
 
-  describe '#respond_with_protocol' do
+  describe "#respond_with_protocol" do
      
     it "raises an error if we have no @reply_to" do
       expect{ msg_stomp.respond_with_protocol('foo') }.to raise_exception NebulousError
@@ -644,16 +628,15 @@ describe Message do
       expect( m.desc   ).to eq 'flang'
     end
 
-    it 'sets the content type from the source message' do
+    it "sets the content type from the source message" do
       _,m = msg_cache.respond_with_protocol('bleem', 'drort', 'flang')
       expect( m.content_type ).to eq msg_cache.content_type
     end
 
-  end
-  ##
+  end # of #respond_with_protocol
   
   
-  describe '#respond' do
+  describe "#respond" do
 
     let(:msg) { msg_cache.respond("desmond") }
      
@@ -677,13 +660,12 @@ describe Message do
       expect( m.body ).to eq 'desmond'
     end
 
-    it 'sets the content type from the source message' do
+    it "sets the content type from the source message" do
       _,m = msg
       expect( m.content_type ).to eq msg_cache.content_type
     end
 
-  end
-  ##
+  end # of #respond
   
 
 end

@@ -1,5 +1,5 @@
-require 'nebulous_stomp/listener'
-require 'nebulous_stomp/stomp_handler_null'
+require "nebulous_stomp/listener"
+require "nebulous_stomp/stomp_handler_null"
 
 include NebulousStomp
 
@@ -9,6 +9,13 @@ describe Listener do
   let(:target1)   { Target.new(name: "foo", sendQueue: "alpha", receiveQueue: "beta") }
   let(:listener1) { Listener.new(target1) }
   let(:handler)   { StompHandlerNull.new }
+
+  before(:each) do
+    # These tests should not call the Stomp gem.  Now if they do, we get an error, because our
+    # fakestomp object doesn't have any methods.
+    fakestomp = double("fakestomp")
+    allow( Stomp::Client ).to receive(:new).and_return( fakestomp )
+  end
 
 
   describe "#new" do
@@ -20,7 +27,7 @@ describe Listener do
       expect{ Listener.new "alpha" }.not_to raise_error
     end
 
-  end
+  end # of #new
 
 
   describe "#queue" do
@@ -33,7 +40,7 @@ describe Listener do
       expect( Listener.new(target1).queue ).to eq target1.receive_queue
     end
 
-  end
+  end # of #queue
 
 
   describe "#stomp_handler" do
@@ -47,12 +54,11 @@ describe Listener do
       expect( listener1.send(:stomp_handler).class ).to eq StompHandler
     end
 
-  end
+  end # of #stomp_handler
 
 
   describe "#consume_messages" do
-
-    before do
+    before(:each) do
       listener1.stomp_handler = handler
       handler.insert_fake "foo"
       handler.insert_fake "bar"
@@ -63,14 +69,11 @@ describe Listener do
       expect{|b| listener1.consume_messages &b }.to yield_successive_args("foo", "bar", "baz")
     end
     
-  end
+  end # of consume_messages
 
 
   describe "#reply" do
-
-    before do
-      listener1.stomp_handler = handler
-    end
+    before(:each) { listener1.stomp_handler = handler }
 
     it "takes a queue name and a Message object" do
       expect{ listener1.reply        }.to raise_error ArgumentError
@@ -85,7 +88,7 @@ describe Listener do
       listener1.reply("beta", "bar")
     end
 
-  end
+  end # of #reply
 
 
   describe "#quit" do
@@ -95,9 +98,8 @@ describe Listener do
       expect( handler ).to receive(:stomp_disconnect)
       listener1.quit
     end
-      
     
-  end
+  end # of #quit
   
 
 end

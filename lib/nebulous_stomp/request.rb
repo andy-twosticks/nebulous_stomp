@@ -25,7 +25,8 @@ module NebulousStomp
     attr_reader :message
 
     # If you are testing you can write these with a test object like StompHandlerNull for example
-    attr_writer :stomp_handler, :redis_handler
+    attr_reader :stomp_handler
+    attr_writer :redis_handler
 
     ##
     # :call-seq:
@@ -37,9 +38,11 @@ module NebulousStomp
       @target  = parse_target(target)
       @message = parse_message(message, @target)
       NebulousStomp.logger.debug(__FILE__) { "New Request for verb #{@message.verb}" }
+    end
 
-      # Get a connection to StompHandler ASAP and set reply_id on @message
-      ensure_stomp_connected if NebulousStomp.on?
+    def stomp_handler=(handler)
+      @stomp_handler = handler
+      ensure_stomp_connected # so that we get a reply_id on the message ASAP.
     end
 
     ##
