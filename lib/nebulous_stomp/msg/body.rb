@@ -27,7 +27,7 @@ module NebulousStomp
       #
       def initialize(is_json, hash)
         @is_json    = !!is_json
-        @stomp_body = hash[:stompBody]
+        @stomp_body = fix_bad_encoding( hash[:stompBody] )
         @body       = hash[:body]
         @verb       = hash[:verb]
         @params     = hash[:parameters] || hash[:params] 
@@ -162,6 +162,21 @@ module NebulousStomp
         end
       end
 
+      ##
+      # Deal with encoding problems.  Try ISO8859-1 first.  (Sorry for the Western bias, but this
+      # solves a lot of use-cases for us.)
+      #
+      def fix_bad_encoding(string)
+        return nil if string.nil?
+
+        unless string.valid_encoding?
+          s = string.encode("UTF-8", "ISO8859-1") 
+          string = s if s.valid_encoding?
+        end
+
+        string.encode!(invalid: :replace, undef: :replace) unless string.valid_encoding?
+        string
+      end
 
     end # Message::Body
 

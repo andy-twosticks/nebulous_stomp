@@ -126,7 +126,7 @@ describe Message do
       expect( m.body   ).to eq "wigi wigi"
     end
 
-    it "leaves body alone if it\'s an empty array and there is no protocol and no stompbody" do
+    it "leaves body alone if it's an empty array and there is no protocol and no stompbody" do
       # rather than processing a nil stompbody and ending up with nil/NULL
       m = Message.new(body: [])
       expect( m.body ).to eq([])
@@ -145,6 +145,12 @@ describe Message do
       expect{ Message.new(verb: 'thing'              ) }.not_to raise_exception
       expect{ Message.new(replyTo: 'foo', body: 'bar') }.not_to raise_exception
       expect{ Message.new(body: 'bar')                 }.not_to raise_exception
+    end
+
+    it "encodes the stompbody if the encoding is not valid" do
+      m = Message.new(stompBody: "foo \xa2 bar")
+      expect( m.body ).to match /foo.*bar/
+      expect( m.body ).to be_valid_encoding
     end
 
   end # of Message.new

@@ -54,6 +54,12 @@ describe Request do
     request
   end
 
+  let(:request2) do
+    request = new_request(target1, message1)
+    @stomp_handler.insert_fake Message.new(inReplyTo: request.message.reply_id, stompBody: "1 \xa2 2")
+    request
+  end
+
   before(:each) do
     # We shouldn't be calling Stomp or Redis in these tests. If we are, this will give us an error.
     fakestomp = double("fakestomp")
@@ -170,6 +176,11 @@ describe Request do
       expect( request.send_no_cache ).to be_nil
     end
 
+    it "encodes the response message body from Stomp if the encoding was not valid" do
+      response = request2.send_no_cache
+      expect( response.body ).to be_valid_encoding
+    end
+
   end # of #send_no_cache
   
 
@@ -252,6 +263,11 @@ describe Request do
       turn_off_nebulous
       request = new_request(target1, message1)
       expect( request.send ).to be_nil
+    end
+
+    it "encodes the response message body from Stomp if the encoding was not valid" do
+      response = request2.send
+      expect( response.body ).to be_valid_encoding
     end
 
   end # of #send
