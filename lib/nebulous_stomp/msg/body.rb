@@ -27,13 +27,19 @@ module NebulousStomp
       #
       def initialize(is_json, hash)
         @is_json    = !!is_json
-        @stomp_body = fix_bad_encoding( hash[:stompBody] )
+        @stomp_body = hash[:stompBody]
         @body       = hash[:body]
         @verb       = hash[:verb]
         @params     = hash[:parameters] || hash[:params] 
         @desc       = hash[:description] || hash[:desc]
 
         fill_from_stomp
+
+        @stomp_body = fix_bad_encoding(@stomp_body)
+        @body       = fix_bad_encoding(@body)
+        @verb       = fix_bad_encoding(@verb)
+        @params     = fix_bad_encoding(@params)
+        @desc       = fix_bad_encoding(@desc)
       end
 
       ##
@@ -44,7 +50,7 @@ module NebulousStomp
       #
       def to_h
         { stompBody: @stomp_body,
-          body:      @stomp_body ? nil : body,
+          body:      @stomp_body ? nil : @body,
           verb:      @verb,
           params:    @params.kind_of?(Enumerable) ? @params.dup : @params,
           desc:      @desc }
@@ -167,7 +173,7 @@ module NebulousStomp
       # solves a lot of use-cases for us.)
       #
       def fix_bad_encoding(string)
-        return nil if string.nil?
+        return string unless string.is_a? String
 
         unless string.valid_encoding?
           s = string.encode("UTF-8", "ISO8859-1") 
