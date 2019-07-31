@@ -27,7 +27,7 @@ module NebulousStomp
       #
       def initialize(is_json, hash)
         @is_json    = !!is_json
-        @stomp_body = hash[:stompBody]
+        @stomp_body = fix_bad_encoding( hash[:stompBody] )
         @body       = hash[:body]
         @verb       = hash[:verb]
         @params     = hash[:parameters] || hash[:params] 
@@ -35,11 +35,10 @@ module NebulousStomp
 
         fill_from_stomp
 
-        @stomp_body = fix_bad_encoding(@stomp_body)
-        @body       = fix_bad_encoding(@body)
-        @verb       = fix_bad_encoding(@verb)
-        @params     = fix_bad_encoding(@params)
-        @desc       = fix_bad_encoding(@desc)
+        @body   = fix_bad_encoding(@body)
+        @verb   = fix_bad_encoding(@verb)
+        @params = fix_bad_encoding(@params)
+        @desc   = fix_bad_encoding(@desc)
       end
 
       ##
@@ -169,18 +168,23 @@ module NebulousStomp
       end
 
       ##
-      # Deal with encoding problems.  Try ISO8859-1 first.  (Sorry for the Western bias, but this
-      # solves a lot of use-cases for us.)
+      # Deal with encoding problems.
       #
       def fix_bad_encoding(string)
         return string unless string.is_a? String
 
-        unless string.valid_encoding?
-          s = string.encode("UTF-8", "ISO8859-1") 
-          string = s if s.valid_encoding?
+        # Assume that anything without a real encoding is actually in ISO8859-1, and convert it to
+        # UTF-8.  (Sorry for the UK bias, but this fixes problems for us here. Eventually I'd like
+        # to see an an optional encoding set against each target, but that's for another day.)
+        if string.encoding == Encoding::ASCII_8BIT
+          string.force_encoding("ISO8859-1")
+          string.encode!("UTF-8", invalid: :replace, undef: :replace)
+
+        # Otherwise if there are problems don't screw with the encoding, but do fix the problems.
+        elsif !string.valid_encoding?
+          string.encode!(invalid: :replace, undef: :replace)
         end
 
-        string.encode!(invalid: :replace, undef: :replace) unless string.valid_encoding?
         string
       end
 
