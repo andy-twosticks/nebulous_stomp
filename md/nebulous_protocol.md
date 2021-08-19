@@ -6,8 +6,10 @@ Nebulous: The Protocol
 
 Introduction
 ------------
-Project Nebulous is a STOMP client written in ABL, and also the protocol that allows our different
-systems, ABL or not, to pass messages. This document, obviously, concentrates on the protocol.
+This document defines some specific rules of engagement for processes to communicate using STOMP.
+It so happens that NebulousStomp is currently the only open-source thing to use these rules -- I
+made them up -- but technically speaking, that's a "protocol", and I'm going to call it such
+because you can't stop me.
 
 The basic idea is this: one system passes a message, a _request_; and then waits for an answer to
 that message, a _response_, from another system. STOMP doesn't explicitly support that; the
@@ -20,7 +22,8 @@ message is both a response and a request, and the terms get rather less useful.)
 
 The Protocol
 ------------
-Let's start with the actual protocol, the rules. They won't make sense without reading the rest of the document, but:
+Let's start with the actual protocol, the rules. They won't make sense without reading the rest of
+the document, but:
 
 1. Every valid request (that is, every message with an identifiable verb other than "success" or
    "error") will always generate a response. If the handling routine cannot generate a valid
@@ -45,7 +48,7 @@ Let's start with the actual protocol, the rules. They won't make sense without r
 6. A given queue that is the target of requests within The Protocol will be for only one system or
    common group of systems. They may consume (ACK) messages sent to it even if they do not have the
    facility to process them.  If multiple systems share a queue, they should understand that
-   messages will be consumed from it at random.
+   messages will be consumed from it at random. (So, don't do that.)
 
 
 Components
@@ -74,9 +77,9 @@ The Protocol specifies a format for the message body. It consists of three field
 
 * _description_ is a text field and can contain anything. It is optional.
 
-Nebulous supports message bodies in either JSON (in which case parameters is probably an array) or
-plain text (in which case it expects to find the fields formatted in the same way as STOMP headers:
-seperated by line breaks, where each line consists of the field name, a colon, and the value).
+Nebulous supports message bodies in either JSON or plain text (in which case it expects to find the
+fields formatted in the same way as STOMP headers: seperated by line breaks, where each line
+consists of the field name, a colon, and the value).
 
 There are a couple of special verbs:
 
@@ -97,12 +100,11 @@ responses to be sent.
 
 ### Responder ###
 
-Let's talk about the Responder use case first, since it's simpler; we've basically been talking
-about it for the whole of this document. You'll need to designate a queue for incoming requests on
-any given system. You might want more than one; in ABL, where traffic jams are likely because I
-can't just spawn up a thread to handle each incoming message, my current thinking is to have two
-incoming queues, one for reqests that take a few seconds, and another for requests that take
-longer. 
+Let's talk about the Responder use case first, since it's simpler. On any given system, you'll need
+to designate a queue for incoming requests. You might want more than one. (In ABL, where traffic
+jams are likely because I can't just spawn up a thread to handle each incoming message, my current
+thinking is to have two incoming queues, one for reqests that take a few seconds, and another for
+requests that take longer.)
 
 Remember that rule 6 says that any messages that go to a queue like this will be consumed without
 concern for whether the message will make sense to the system in question; this is basically there
@@ -126,8 +128,8 @@ really falls outside of The Protocol.
 
 In theory, Rule 3 says you can fail to use _neb-reply-to_ and pick up your response from the same
 queue you posted the message to. But rule 6 says that if you do that you don't have any guarantee
-at all of getting your message; the Responder will take it. So for practical purposes you almost
-always *have* to set a reply-to queue in your request. 
+at all of getting your message; the Responder will take it. So for practical purposes you *have* to
+set a reply-to queue in your request. 
 
 Likewise, Rule 4 says that _neb-reply-id_ is optional. But in practice you should almost certainly
 set it. Yes, you can specify a brand new queue that is unique to your request -- or probably
@@ -145,14 +147,16 @@ avoiding consuming those messages that are not.
 For a unique reply-id you could do worse than starting with the session ID that STOMP returns when
 you send a CONNECT frame; clearly the message server thinks that is unique, and it should know. In
 the Ruby Stomp gem, you can get it with `client.connection_frame().headers["session"]` where client
-is your `Stomp::Client` instance; in my ABL jhstomp.p library call `get_session_id()`.
+is your `Stomp::Client` instance; in my ABL jhstomp.p library call `get_session_id()`. (This is how
+NebulousStomp does it.)
 
 Now that you have a good reply ID you can tell which is yours by Rule 4; just test the
 _neb-in-reply-to_ header of each message. 
 
 The second problem, of avoiding consuming messages that don't match your reply-id, is handled by
 careful use of STOMP. If when subscribing you set the header `ack:client-individual`, then you must
-manually acknowledge each message you want to consume with an ACK frame.
+manually acknowledge each message you want to consume with an ACK frame. (Again, how NebulousStomp
+does it.)
 
 Finally, you get to handle the response. Rule 1 says that it will either be an error verb, a
 success verb ... or something else specific to the verb. The nature of messages in responses is
@@ -163,5 +167,8 @@ enforce that.
 
 Note also that while The Protocol says that a request should always result in a response, there is
 nothing to say that the sender of the request should care -- say, in the example of a request that
-results in a report being emailed, which takes 20 minutes. 
+results in a report being emailed, which takes 20 minutes. In practice where that is the case I've
+been sending the success verb early, to say "yes, got your message, I see that it is valid -- don't
+wait up"; but the party that sends the message doesn't have to check it, since it's not very
+helpful.
 

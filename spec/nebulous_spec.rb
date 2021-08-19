@@ -1,18 +1,17 @@
-require 'spec_helper'
-
-require 'logger'
-
 require 'nebulous_stomp/param'
 
 
 describe NebulousStomp do
 
-  before      { NebulousStomp::Param.reset }
-  after(:all) { NebulousStomp::Param.reset }
+  before      { NebulousStomp::Param.send :reset }
+  after(:all) { NebulousStomp::Param.send :reset }
 
 
   # Magically replaces the real Param module
   let(:param) { class_double(NebulousStomp::Param).as_stubbed_const }
+
+  let(:tname) {:foo}
+  let(:thash) { {sendQueue: "foo", receiveQueue: "bar"} }
 
 
   it 'has a version number' do
@@ -66,14 +65,49 @@ describe NebulousStomp do
   describe 'NebulousStomp.add_target' do
 
     it 'calls Param.add_target' do
-      t1 = :foo; t2 = {bar: 'baz'}
-      expect(param).to receive(:add_target).with(t1, t2)
-      NebulousStomp.add_target(t1, t2)
+      expect(param).to receive(:add_target) do | t|
+        expect(t.name).to eq tname
+        expect(t.send_queue).to eq thash[:sendQueue]
+        expect(t.receive_queue).to eq thash[:receiveQueue]
+      end
+
+      NebulousStomp.add_target(tname, thash)
+    end
+
+    it 'returns the target object' do
+      t = NebulousStomp.add_target(tname, thash)
+      expect( t ).to be_kind_of(NebulousStomp::Target)
+    end
+
+    it "adds the name to the target hash" do
+      t = NebulousStomp.add_target(tname, thash)
+      expect( t.name ).to eq tname
     end
 
   end
   ##
 
+
+  describe 'NebulousStomp.get_target' do
+
+    before do
+      NebulousStomp.add_target(tname, thash)
+    end
+     
+    it "calls Param.get_target" do
+      expect(param).to receive(:get_target).with(tname)
+      NebulousStomp.get_target(tname)
+    end
+
+    it "returns the target object" do
+      t = NebulousStomp.get_target(tname)
+      expect( t ).to be_kind_of(NebulousStomp::Target)
+      expect( t.name ).to eq tname
+    end
+    
+  end
+  ##
+  
 
   describe 'NebulousStomp.on?' do
 
@@ -118,6 +152,7 @@ describe NebulousStomp do
 
   end
   ##
+
 
 end
 
