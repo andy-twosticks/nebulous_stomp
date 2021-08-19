@@ -31,17 +31,20 @@ Gem::Specification.new do |spec|
     Nebulous has been installed ...sort of... ::waves arms noncomittedly::
   MESSAGE
 
-  spec.add_development_dependency "bundler", "~> 1.11"
-  spec.add_development_dependency "rake",    "~> 10.5"
-  spec.add_development_dependency "rspec",   "~> 3.4"
+  spec.add_development_dependency "bundler", "~> 2.2"
+  spec.add_development_dependency "rake",    "~> 13.0"
+  spec.add_development_dependency "rspec",   "~> 3.10"
   spec.add_development_dependency "rdoc"
   spec.add_development_dependency "pry"
   spec.add_development_dependency "pry-doc"
   spec.add_development_dependency "ripper-tags"
 
   # Note, Stomp 1.4.5 does not work with jRuby; see https://github.com/stompgem/stomp/issues/153
-  spec.add_runtime_dependency 'stomp',   '1.4.8'
-  spec.add_runtime_dependency 'redis',   '~>3.1'
+  #spec.add_runtime_dependency 'stomp',   '1.4.8'
+  spec.add_runtime_dependency 'stomp',   '1.4.10'
+  
+  # Note this is very much not the latest version, we need to fix this
+  spec.add_runtime_dependency 'redis',   '~>3.3'
   spec.add_runtime_dependency 'devnull', '~>0.1'
  
 end
