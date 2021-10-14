@@ -1,7 +1,7 @@
-require_relative 'stomp_handler'
-require_relative 'redis_handler'
-require_relative 'message'
-require_relative 'target'
+require_relative "stomp_handler"
+require_relative "redis_handler"
+require_relative "message"
+require_relative "target"
 
 
 module NebulousStomp
@@ -34,10 +34,11 @@ module NebulousStomp
     #
     # Pass either a Target or a target name; and a Message (which has a verb)
     #
-    def initialize(target, message)
+    def initialize(target, message, logid="")
       @target  = parse_target(target)
       @message = parse_message(message, @target)
-      NebulousStomp.logger.debug(__FILE__) { "New Request for verb #{@message.verb}" }
+      @logid   = logid
+      NebulousStomp.logger.debug(__FILE__) {log_helper "New Request for verb #{@message.verb}"}
     end
 
     def stomp_handler=(handler)
@@ -62,12 +63,12 @@ module NebulousStomp
     #
     def send_no_cache(mtimeout=message_timeout)
       return nil unless NebulousStomp.on?
-      NebulousStomp.logger.info(__FILE__) { "Sending request to target #{@target.name}" }
+      NebulousStomp.logger.info(__FILE__) {log_helper "Sending request to target #{@target.name}"}
 
       ensure_stomp_connected
       neb_qna(mtimeout)
     ensure
-      stomp_handler.stomp_disconnect
+      stomp_handler.stomp_disconnect(@logid)
     end
 
     ##
@@ -163,7 +164,7 @@ module NebulousStomp
     # If we've lost the connection then reconnect but *keep replyID*
     #
     def ensure_stomp_connected
-      stomp_handler.stomp_connect unless stomp_handler.connected?
+      stomp_handler.stomp_connect(@logid) unless stomp_handler.connected?
       @message.reply_id = stomp_handler.calc_reply_id if @message.reply_id.nil? 
     end
 
@@ -178,10 +179,12 @@ module NebulousStomp
     # Send a message via STOMP and wait for a response
     #
     def neb_qna(mTimeout)
-      stomp_handler.send_message(@target.receive_queue, @message)
+      stomp_handler.send_message(@target.receive_queue, @message, @logid)
+
+      NebulousStomp.logger.debug(__FILE__) {log_helper "Looking for #{@message.reply_id}"}
 
       response = nil
-      stomp_handler.listen_with_timeout(@target.send_queue, mTimeout) do |msg|
+      stomp_handler.listen_with_timeout(@target.send_queue, mTimeout, @logid) do |msg|
         if @message.reply_id && msg.in_reply_to != @message.reply_id
           false
         else
@@ -189,6 +192,7 @@ module NebulousStomp
           true
         end
       end
+      NebulousStomp.logger.debug(__FILE__) {log_helper "Got response: #{response}"}
 
       response
     end
@@ -206,6 +210,12 @@ module NebulousStomp
     #
     def cache_write(response, timeout)
       redis_handler.set(@message.protocol_json, response.to_h.to_json, ex: timeout)
+    end
+
+    private
+
+    def log_helper(message)
+      "[#{@logid}|#{Thread.object_id}] #{message}"
     end
 
   end # Request

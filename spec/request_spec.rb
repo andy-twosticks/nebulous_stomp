@@ -64,8 +64,8 @@ describe Request do
     # We shouldn't be calling Stomp or Redis in these tests. If we are, this will give us an error.
     fakestomp = double("fakestomp")
     fakeredis = double("fakeredis")
-    allow( Stomp::Client ).to receive(:new).and_return( fakestomp )
-    allow( Redis         ).to receive(:new).and_return( fakeredis )
+    allow( Stomp::Connection ).to receive(:new).and_return( fakestomp )
+    allow( Redis             ).to receive(:new).and_return( fakeredis )
 
     @stomp_hash = { hosts: [{ login:    'guest',
                               passcode: 'guest',

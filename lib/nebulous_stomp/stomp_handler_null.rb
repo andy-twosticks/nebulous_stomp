@@ -25,14 +25,26 @@ module NebulousStomp
       @fake_messages << message
     end
 
-    def stomp_connect
-      NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP (Null)"} 
+    def respond_success(nebMess, logid="")
+      NebulousStomp.logger.info(__FILE__) do 
+        log_helper logid, "Responded to #{nebMess} with 'success' verb (to Null)"
+      end
+    end
+
+    def respond_error(nebMess,err,fields=[], logid="")
+      NebulousStomp.logger.info(__FILE__) do
+        log_helper logid, "Responded to #{nebMess} with 'error' verb: #{err} (to Null)"
+      end
+    end
+
+    def stomp_connect(logid="")
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "Connecting to STOMP (Null)"} 
       @client = true
       self
     end
 
-    def stomp_disconnect
-      NebulousStomp.logger.info(__FILE__) {"STOMP Disconnect (Null)"}
+    def stomp_disconnect(logid="")
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "STOMP Disconnect (Null)"}
       @client = nil
       self
     end
@@ -41,13 +53,13 @@ module NebulousStomp
       @fake_messages != []
     end
 
-    def listen(queue)
-      NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+    def listen(queue, logid="")
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "Subscribing to #{queue} (on Null)"}
       @fake_messages.each{|m| yield m }
     end
 
-    def listen_with_timeout(queue, timeout)
-      NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue} (on Null)"}
+    def listen_with_timeout(queue, timeout, logid="")
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "Subscribing to #{queue} (on Null)"}
 
       if @fake_messages != []
         @fake_messages.each{|m| yield m }
@@ -57,23 +69,17 @@ module NebulousStomp
       end
     end
 
-    def send_message(queue, nebMess)
+    def send_message(queue, nebMess, logid="")
       nebMess
     end
 
-    def respond_success(nebMess)
-      NebulousStomp.logger.info(__FILE__) do 
-        "Responded to #{nebMess} with 'success' verb (to Null)"
-      end
-    end
-
-    def respond_error(nebMess,err,fields=[])
-      NebulousStomp.logger.info(__FILE__) do
-        "Responded to #{nebMess} with 'error' verb: #{err} (to Null)"
-      end
-    end
-
     def calc_reply_id; 'ABCD123456789'; end
+
+    private
+
+    def log_helper(logid, message)
+      "[N#{logid}|#{Thread.object_id}] #{message}"
+    end
 
   end
 

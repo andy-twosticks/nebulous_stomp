@@ -14,75 +14,31 @@ module NebulousStomp
   #
   class StompHandler
 
-    attr_reader :client
-
-
-    ##
-    # Class methods
-    #
-    class << self
-
-      ##
-      # :call-seq:
-      #   StompHandler.with_timeout(secs) -> (nil)
-      #
-      # Run a routine with a timeout.
-      #
-      # Example:
-      #  StompHandler.with_timeout(10) do |r|
-      #    sleep 20
-      #    r.signal
-      #  end
-      #
-      # Use `r.signal` to signal when the process has finished. You need to arrange your own method
-      # of working out whether the timeout fired or not.
-      #
-      # Also, please note that when the timeout period expires, your code will keep running. The
-      # timeout will only be honoured when your block completes. This is very useful for
-      # Stomp.subscribe, but probably not for anything else...
-      #
-      # There is a Ruby standard library for this, Timeout. But there appears to be some argument
-      # as to whether it is threadsafe; so, we roll our own. It probably doesn't matter since both
-      # Redis and Stomp do use Timeout. But.
-      #
-      def with_timeout(secs)
-        mutex    = Mutex.new
-        resource = ConditionVariable.new
-
-        t = Thread.new do
-          mutex.synchronize { yield resource }
-        end
-        mutex.synchronize { resource.wait(mutex, secs) }
-
-        nil
-      end
-
-    end
-    ##
+    attr_reader :conn
 
 
     ##
     # Initialise StompHandler by passing the parameter hash.
     #
-    def initialize(connectHash=nil, testClient=nil)
-      @stomp_hash  = connectHash ? connectHash.dup : nil
-      @test_client = testClient
-      @client      = nil
+    def initialize(connectHash=nil, testConn=nil)
+      @stomp_hash = connectHash ? connectHash.dup : nil
+      @test_conn  = testConn
+      @conn       = nil
     end
 
     ##
     # Connect to the STOMP client.
     #
-    def stomp_connect
+    def stomp_connect(logid="")
       return self unless nebulous_on?
-      NebulousStomp.logger.info(__FILE__) {"Connecting to STOMP"} 
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "Connecting to STOMP"} 
 
-      @client = @test_client || Stomp::Client.new( @stomp_hash )
-      fail ConnectionError, "Stomp Connection failed" unless connected?
+      @conn = @test_conn || Stomp::Connection.new(@stomp_hash)
+      fail ConnectionError, "Stomp Connection failed" unless @conn.open?()
 
-      conn = @client.connection_frame()
-      if conn.command == Stomp::CMD_ERROR
-        fail ConnectionError, "Connect Error: #{conn.body}"
+      cf = @conn.connection_frame()
+      if cf.command == Stomp::CMD_ERROR
+        fail ConnectionError, "Connect Error: #{cf.body}"
       end
 
       self
@@ -93,11 +49,11 @@ module NebulousStomp
     ##
     # Drop the connection to the STOMP Client
     #
-    def stomp_disconnect
-      if @client
-        NebulousStomp.logger.info(__FILE__) {"STOMP Disconnect"}
-        @client.close if @client
-        @client = nil
+    def stomp_disconnect(logid="")
+      if @conn
+        NebulousStomp.logger.info(__FILE__) {log_helper logid, "STOMP Disconnect"}
+        @conn.disconnect() if @conn
+        @conn = nil
       end
 
       self
@@ -107,14 +63,14 @@ module NebulousStomp
     # return true if we are connected to the STOMP server
     #
     def connected?
-      @client && @client.open?
+      !!(@conn && @conn.open?())
     end
 
     ##
     # return true if Nebulous is turned on in the parameters
     #
     def nebulous_on?
-      @stomp_hash && !@stomp_hash.empty?
+      !!(@stomp_hash && !@stomp_hash.empty?)
     end
 
     ##
@@ -124,31 +80,36 @@ module NebulousStomp
     # are using it for the request-response use case.  If you don't want that, try
     # listen_with_timeout(), instead.
     #
-    # Note that the blocking happens in a thread somewhere inside the STOMP client. I have no idea
-    # how to join that, and if the examples on the STOMP gem are to be believed, you flat out can't
-    # -- the examples just have the main thread sleeping so that it does not termimate while the
-    # thread is running.  So to use this make sure that you at some point do something
-    # like:
-    #     loop { sleep 5 }
+    # It runs in a thread; if you want it to stop, just stop waiting for it.
     #
-    def listen(queue)
+    def listen(queue, logid="")
       return unless nebulous_on?
       NebulousStomp.logger.info(__FILE__) {"Subscribing to #{queue}"}
 
-      stomp_connect unless @client
+      Thread.new do
+        stomp_connect unless @conn
 
-      # Startle the queue into existence. You can't subscribe to a queue that
-      # does not exist, BUT, you can create a queue by posting to it...
-      @client.publish( queue, "boo" )
+        # Startle the queue into existence. You can't subscribe to a queue that
+        # does not exist, BUT, you can create a queue by posting to it...
+        @conn.publish( queue, "boo" )
+        @conn.subscribe( queue, {ack: "client-individual"} )
 
-      @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
-        begin
-          @client.ack(msg)
-          yield Message.from_stomp(msg) unless msg.body == 'boo'
-        rescue =>e
-          NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
+        loop do
+          begin
+            msg = @conn.poll()
+            log_msg(msg, logid)
+            ack(msg)
+
+            yield Message.from_stomp(msg) \
+              unless msg.body == 'boo' \
+                  || msg.respond_to?(:command) && msg.command == "ERROR"
+
+          rescue =>e
+            NebulousStomp.logger.error(__FILE__) {log_helper logid, "Error during polling: #{e}"}
+          end
         end
-      end
+
+      end # of thread
 
     end
 
@@ -163,39 +124,61 @@ module NebulousStomp
     # Put another way, since most things are truthy -- if you want to examine messages to find the
     # right one, return false from the block to get another.
     #
-    def listen_with_timeout(queue, timeout)
+    def listen_with_timeout(queue, timeout, logid="")
       return unless nebulous_on?
-      NebulousStomp.logger.info(__FILE__) { "Subscribing to #{queue} with timeout #{timeout}" }
+      NebulousStomp.logger.info(__FILE__) {log_helper logid, "Subscribing to #{queue} with timeout #{timeout}"}
 
-      stomp_connect unless @client
-      @client.publish( queue, "boo" )
+      stomp_connect unless @conn
+      id = rand(10000)
+
+      @conn.publish( queue, "boo" )
+      
       done = false
+      time = Time.now
 
-      StompHandler.with_timeout(timeout) do |resource|
-        @client.subscribe( queue, {ack: "client-individual"} ) do |msg|
+      @conn.subscribe(queue, {ack: "client-individual"}, id) 
+      NebulousStomp.logger.debug(__FILE__) {log_helper logid, "subscribed"}
 
-          begin
-            if msg.body == "boo"
-              @client.ack(msg)
+      loop do
+        begin
+          msg = @conn.poll()
+
+          if msg.nil?
+            # NebulousStomp.logger.debug(__FILE__) {log_helper logid, "Empty message, sleeping"}
+            sleep 0.2
+          else
+            log_msg(msg, logid)
+
+            if msg.respond_to?(:command) && msg.command == "ERROR"
+              NebulousStomp.logger.error(__FILE__) {log_helper logid, "Error frame: #{msg.inspect}" }
+              ack(msg)
+            elsif msg.respond_to?(:body) && msg.body == "boo"
+              ack(msg)
             else
               done = yield Message.from_stomp(msg) 
-              @client.ack(msg) if done
+              if done
+                NebulousStomp.logger.debug(__FILE__) {log_helper logid, "Yield returns true"}
+                ack(msg)
+              end
             end
 
-          rescue =>e
-            NebulousStomp.logger.error(__FILE__) {"Error during polling: #{e}" }
-          end
+          end # of else
 
-          if done
-            # Not that this seems to do any good when the Stomp gem is in play
-            resource.signal 
-            break
-          end
+        rescue =>e
+          NebulousStomp.logger.error(__FILE__) {log_helper logid, "Error during polling: #{e}"}
+        end
 
-        end # of Stomp client subscribe block
+        break if done
 
-        resource.signal if done #or here. either, but.
-      end # of with_timeout
+        if timeout && (time + timeout < Time.now)
+          NebulousStomp.logger.debug(__FILE__) {log_helper logid, "Timed out"}
+          break
+        end
+      end
+
+      NebulousStomp.logger.debug(__FILE__) {log_helper logid, "Out of loop. done=#{done}"}
+
+      @conn.unsubscribe(queue, {}, id)
 
       fail NebulousTimeout unless done
     end
@@ -203,16 +186,16 @@ module NebulousStomp
     ##
     # Send a Message to a queue; return the message.
     #
-    def send_message(queue, mess)
+    def send_message(queue, mess, logid="")
       return nil unless nebulous_on?
       fail NebulousStomp::NebulousError, "That's not a Message" \
         unless mess.respond_to?(:body_for_stomp) \
             && mess.respond_to?(:headers_for_stomp)
 
-      stomp_connect unless @client
+      stomp_connect unless @conn
 
       headers = mess.headers_for_stomp.reject{|k,v| v.nil? || v == "" }
-      @client.publish(queue, mess.body_for_stomp, headers)
+      @conn.publish(queue, mess.body_for_stomp, headers)
       mess
     end
 
@@ -221,12 +204,42 @@ module NebulousStomp
     #
     def calc_reply_id
       return nil unless nebulous_on?
-      fail ConnectionError, "Client not connected" unless @client
+      fail ConnectionError, "Client not connected" unless @conn
 
-      @client.connection_frame().headers["session"] \
+      @conn.connection_frame().headers["session"] \
         << "_" \
         << Time.now.to_f.to_s
 
+    end
+
+    private
+
+    def log_helper(logid, message)
+      "[#{logid}|#{Thread.object_id}] #{message}"
+    end
+
+    def log_msg(message, logid)
+      NebulousStomp.logger.debug(__FILE__) do
+        b = message.respond_to?(:body) ? message.body.to_s[0..30] : nil
+        h = message.respond_to?(:headers) ? message.headers.select{|k,v| k.start_with?("neb-") }.to_h : {}
+        log_helper logid, "New message neb: #{h} body: #{b}"
+      end
+    end
+
+    # Borrowed from Stomp::Client.ack()
+    def ack(message, headers={})
+
+      case @conn.protocol
+        when Stomp::SPL_12
+          id = 'ack'
+        when Stomp::SPL_11
+          headers = headers.merge(:subscription => message.headers['subscription'])
+          id = 'message-id'
+        else
+          id = 'message-id'
+      end
+
+      @conn.ack(message.headers[id], headers)
     end
 
   end # StompHandler
