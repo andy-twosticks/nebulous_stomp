@@ -32,6 +32,7 @@ module NebulousStomp
     def stomp_connect(logid="")
       return self unless nebulous_on?
       NebulousStomp.logger.info(__FILE__) {log_helper logid, "Connecting to STOMP"} 
+      NebulousStomp.logger.debug(__FILE__) {log_helper logid, @stomp_hash.inspect}
 
       @conn = @test_conn || Stomp::Connection.new(@stomp_hash)
       fail ConnectionError, "Stomp Connection failed" unless @conn.open?()
